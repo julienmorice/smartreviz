@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <!-- Progress Bar -->
+  <!-- Progress Bar — now 5 steps -->
   <nav class="progress-bar" id="progressBar">
     <div class="progress-step active" data-step="1">
       <span class="step-icon">1</span>
@@ -22,11 +22,16 @@
     <div class="progress-connector" id="conn-2"></div>
     <div class="progress-step" data-step="3">
       <span class="step-icon">3</span>
-      <span class="step-label" id="label-flashcards">Flashcards</span>
+      <span class="step-label" id="label-matching">Matching</span>
     </div>
     <div class="progress-connector" id="conn-3"></div>
     <div class="progress-step" data-step="4">
       <span class="step-icon">4</span>
+      <span class="step-label" id="label-flashcards">Flashcards</span>
+    </div>
+    <div class="progress-connector" id="conn-4"></div>
+    <div class="progress-step" data-step="5">
+      <span class="step-icon">5</span>
       <span class="step-label" id="label-quiz">QCM</span>
     </div>
   </nav>
@@ -52,11 +57,27 @@
     </div>
     <div id="glossaryContent"></div>
     <div class="btn-container">
-      <button class="btn btn-primary" id="btnToFlashcards">Continuer</button>
+      <button class="btn btn-primary" id="btnToMatching">Continuer</button>
     </div>
   </div>
 
-  <!-- Section 3: Flashcards -->
+  <!-- Section 3: Matching (Drag & Drop) -->
+  <div class="section" id="section-matching">
+    <div class="section-header">
+      <h1 id="matchingTitle">Associez les termes</h1>
+      <p id="matchingSubtitle">Glissez chaque terme vers sa définition correspondante</p>
+    </div>
+    <div class="matching-game" id="matchingGame">
+      <div class="matching-terms" id="matchingTerms"></div>
+      <div class="matching-slots" id="matchingSlots"></div>
+    </div>
+    <div class="matching-feedback" id="matchingFeedback"></div>
+    <div class="btn-container">
+      <button class="btn btn-primary" id="btnToFlashcards" disabled>Continuer</button>
+    </div>
+  </div>
+
+  <!-- Section 4: Flashcards -->
   <div class="section" id="section-flashcards">
     <div class="section-header">
       <h1 id="flashcardsTitle">Flashcards</h1>
@@ -84,7 +105,7 @@
     </div>
   </div>
 
-  <!-- Section 4: Quiz -->
+  <!-- Section 5: Quiz -->
   <div class="section" id="section-quiz">
     <div class="section-header">
       <h1 id="quizTitle">QCM</h1>
@@ -93,7 +114,7 @@
     <div id="quizContent"></div>
   </div>
 
-  <!-- Section 5: Completion -->
+  <!-- Section 6: Completion -->
   <div class="section" id="section-complete">
     <div class="completion-screen">
       <div class="check-icon">&#10003;</div>
@@ -109,12 +130,17 @@
     // --- i18n ---
     var labels = {
       fr: {
-        summary: "Résumé", glossary: "Glossaire", flashcards: "Flashcards", quiz: "QCM",
+        summary: "Résumé", glossary: "Glossaire", matching: "Matching", flashcards: "Flashcards", quiz: "QCM",
         summaryOverviewTitle: "Résumé",
         keyPointsTitle: "Points clés",
         detailedSummaryTitle: "Résumé détaillé",
         glossaryTitle: "Glossaire des termes clés",
         glossarySubtitle: "Cliquez sur un terme pour voir sa définition",
+        matchingTitle: "Associez les termes",
+        matchingSubtitle: "Glissez chaque terme vers sa définition correspondante",
+        matchingScore: "associations correctes",
+        matchingRetry: "Recommencer",
+        matchingDragHint: "Termes à placer",
         flashcardsTitle: "Flashcards",
         flashcardsSubtitle: "Cliquez sur la carte pour la retourner",
         quizTitle: "QCM",
@@ -133,15 +159,21 @@
         clickToFlip: "Cliquez pour retourner",
         concept: "Concept",
         question: "Question",
-        card: "Carte"
+        card: "Carte",
+        checkMatching: "Vérifier"
       },
       en: {
-        summary: "Summary", glossary: "Glossary", flashcards: "Flashcards", quiz: "Quiz",
+        summary: "Summary", glossary: "Glossary", matching: "Matching", flashcards: "Flashcards", quiz: "Quiz",
         summaryOverviewTitle: "Summary",
         keyPointsTitle: "Key Points",
         detailedSummaryTitle: "Detailed Summary",
         glossaryTitle: "Key Terms Glossary",
         glossarySubtitle: "Click a term to see its definition",
+        matchingTitle: "Match the Terms",
+        matchingSubtitle: "Drag each term to its matching definition",
+        matchingScore: "correct matches",
+        matchingRetry: "Try again",
+        matchingDragHint: "Terms to place",
         flashcardsTitle: "Flashcards",
         flashcardsSubtitle: "Click the card to flip it",
         quizTitle: "Quiz",
@@ -160,7 +192,8 @@
         clickToFlip: "Click to flip",
         concept: "Concept",
         question: "Question",
-        card: "Card"
+        card: "Card",
+        checkMatching: "Check"
       }
     };
 
@@ -172,15 +205,19 @@
     // --- Apply labels ---
     document.getElementById("label-summary").textContent = L.summary;
     document.getElementById("label-glossary").textContent = L.glossary;
+    document.getElementById("label-matching").textContent = L.matching;
     document.getElementById("label-flashcards").textContent = L.flashcards;
     document.getElementById("label-quiz").textContent = L.quiz;
     document.getElementById("glossaryTitle").textContent = L.glossaryTitle;
     document.getElementById("glossarySubtitle").textContent = L.glossarySubtitle;
+    document.getElementById("matchingTitle").textContent = L.matchingTitle;
+    document.getElementById("matchingSubtitle").textContent = L.matchingSubtitle;
     document.getElementById("flashcardsTitle").textContent = L.flashcardsTitle;
     document.getElementById("flashcardsSubtitle").textContent = L.flashcardsSubtitle;
     document.getElementById("quizTitle").textContent = L.quizTitle;
     document.getElementById("quizSubtitle").textContent = L.quizSubtitle;
     document.getElementById("btnToGlossary").textContent = L.continue;
+    document.getElementById("btnToMatching").textContent = L.continue;
     document.getElementById("btnToFlashcards").textContent = L.continue;
     document.getElementById("btnToQuiz").textContent = L.continueToQuiz;
     document.getElementById("cardHint").textContent = L.clickToFlip;
@@ -205,14 +242,12 @@
     // --- Render Summary ---
     document.getElementById("moduleTitle").textContent = data.title || "Module de révision";
 
-    // Overview paragraph
     if (data.summary && data.summary.overview) {
       var overviewHTML = '<h2>' + L.summaryOverviewTitle + '</h2>';
       overviewHTML += '<p>' + escapeHTML(data.summary.overview) + '</p>';
       document.getElementById("summaryOverview").innerHTML = overviewHTML;
     }
 
-    // Key Points
     if (data.summary && data.summary.keyPoints && data.summary.keyPoints.length > 0) {
       var kpHTML = '<h2>' + L.keyPointsTitle + '</h2><ul class="keypoints-list">';
       data.summary.keyPoints.forEach(function(point) {
@@ -222,7 +257,6 @@
       document.getElementById("summaryKeyPoints").innerHTML = kpHTML;
     }
 
-    // Detailed Summary (chapters)
     var detailedHTML = '<h2>' + L.detailedSummaryTitle + '</h2>';
     if (data.summary && data.summary.chapters) {
       data.summary.chapters.forEach(function(ch) {
@@ -250,13 +284,241 @@
     }
     document.getElementById("glossaryContent").innerHTML = glossaryHTML;
 
-    // Accordion behavior
     document.getElementById("glossaryContent").addEventListener("click", function(e) {
       var term = e.target.closest(".glossary-term");
       if (!term) return;
-      var item = term.parentElement;
-      item.classList.toggle("open");
+      term.parentElement.classList.toggle("open");
     });
+
+    // --- Matching Game (Drag & Drop) ---
+    var matchingItems = [];
+    var matchingCompleted = false;
+
+    function initMatching() {
+      var glossary = data.glossary || [];
+      // Pick up to 8 items, shuffled
+      var shuffled = glossary.slice().sort(function() { return Math.random() - 0.5; });
+      matchingItems = shuffled.slice(0, Math.min(8, shuffled.length));
+
+      var termsContainer = document.getElementById("matchingTerms");
+      var slotsContainer = document.getElementById("matchingSlots");
+
+      // Shuffle terms separately for display
+      var shuffledTerms = matchingItems.slice().sort(function() { return Math.random() - 0.5; });
+
+      // Render draggable terms
+      var termsHTML = '<h3>' + L.matchingDragHint + '</h3><div class="terms-pool" id="termsPool">';
+      shuffledTerms.forEach(function(item, i) {
+        termsHTML += '<div class="match-term" draggable="true" data-term="' + escapeAttr(item.term) + '">' + escapeHTML(item.term) + '</div>';
+      });
+      termsHTML += '</div>';
+      termsContainer.innerHTML = termsHTML;
+
+      // Render definition slots
+      var slotsHTML = '';
+      matchingItems.forEach(function(item, i) {
+        slotsHTML += '<div class="match-slot" data-expected="' + escapeAttr(item.term) + '">';
+        slotsHTML += '<div class="slot-dropzone" data-expected="' + escapeAttr(item.term) + '">';
+        slotsHTML += '<span class="slot-placeholder">?</span>';
+        slotsHTML += '</div>';
+        slotsHTML += '<div class="slot-definition">' + escapeHTML(item.definition) + '</div>';
+        slotsHTML += '</div>';
+      });
+      slotsHTML += '<div class="btn-container"><button class="btn btn-accent" id="btnCheckMatching">' + L.checkMatching + '</button></div>';
+      slotsContainer.innerHTML = slotsHTML;
+
+      document.getElementById("matchingFeedback").innerHTML = '';
+      matchingCompleted = false;
+      document.getElementById("btnToFlashcards").disabled = true;
+
+      setupDragAndDrop();
+    }
+
+    function setupDragAndDrop() {
+      var draggedEl = null;
+
+      // --- Drag events on terms ---
+      document.getElementById("matchingGame").addEventListener("dragstart", function(e) {
+        if (!e.target.classList.contains("match-term")) return;
+        draggedEl = e.target;
+        e.target.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", e.target.dataset.term);
+      });
+
+      document.getElementById("matchingGame").addEventListener("dragend", function(e) {
+        if (e.target.classList.contains("match-term")) {
+          e.target.classList.remove("dragging");
+        }
+        draggedEl = null;
+      });
+
+      // --- Drop events on slots ---
+      document.getElementById("matchingSlots").addEventListener("dragover", function(e) {
+        var dropzone = e.target.closest(".slot-dropzone");
+        if (!dropzone) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        dropzone.classList.add("dragover");
+      });
+
+      document.getElementById("matchingSlots").addEventListener("dragleave", function(e) {
+        var dropzone = e.target.closest(".slot-dropzone");
+        if (dropzone) dropzone.classList.remove("dragover");
+      });
+
+      document.getElementById("matchingSlots").addEventListener("drop", function(e) {
+        var dropzone = e.target.closest(".slot-dropzone");
+        if (!dropzone || !draggedEl) return;
+        e.preventDefault();
+        dropzone.classList.remove("dragover");
+
+        // If slot already has a term, send it back to pool
+        var existing = dropzone.querySelector(".match-term");
+        if (existing) {
+          document.getElementById("termsPool").appendChild(existing);
+        }
+
+        // Place the dragged term in the slot
+        var placeholder = dropzone.querySelector(".slot-placeholder");
+        if (placeholder) placeholder.style.display = "none";
+        dropzone.appendChild(draggedEl);
+        draggedEl.classList.remove("dragging");
+      });
+
+      // --- Touch support for mobile ---
+      var touchDragged = null;
+      var touchClone = null;
+      var touchOffsetX = 0;
+      var touchOffsetY = 0;
+
+      document.getElementById("matchingGame").addEventListener("touchstart", function(e) {
+        var term = e.target.closest(".match-term");
+        if (!term) return;
+        touchDragged = term;
+        var rect = term.getBoundingClientRect();
+        touchOffsetX = e.touches[0].clientX - rect.left;
+        touchOffsetY = e.touches[0].clientY - rect.top;
+
+        touchClone = term.cloneNode(true);
+        touchClone.classList.add("touch-clone");
+        touchClone.style.width = rect.width + "px";
+        document.body.appendChild(touchClone);
+        term.classList.add("dragging");
+
+        moveTouchClone(e.touches[0]);
+      }, { passive: true });
+
+      document.getElementById("matchingGame").addEventListener("touchmove", function(e) {
+        if (!touchDragged || !touchClone) return;
+        e.preventDefault();
+        moveTouchClone(e.touches[0]);
+      }, { passive: false });
+
+      document.getElementById("matchingGame").addEventListener("touchend", function(e) {
+        if (!touchDragged || !touchClone) return;
+        var touch = e.changedTouches[0];
+        document.body.removeChild(touchClone);
+        touchClone = null;
+        touchDragged.classList.remove("dragging");
+
+        // Find drop target
+        var el = document.elementFromPoint(touch.clientX, touch.clientY);
+        var dropzone = el ? el.closest(".slot-dropzone") : null;
+
+        if (dropzone) {
+          var existing = dropzone.querySelector(".match-term");
+          if (existing) {
+            document.getElementById("termsPool").appendChild(existing);
+          }
+          var placeholder = dropzone.querySelector(".slot-placeholder");
+          if (placeholder) placeholder.style.display = "none";
+          dropzone.appendChild(touchDragged);
+        }
+
+        touchDragged = null;
+      }, { passive: true });
+
+      function moveTouchClone(touch) {
+        if (!touchClone) return;
+        touchClone.style.left = (touch.clientX - touchOffsetX) + "px";
+        touchClone.style.top = (touch.clientY - touchOffsetY) + "px";
+      }
+
+      // --- Click-to-select fallback (also good for accessibility) ---
+      var selectedTerm = null;
+
+      document.getElementById("matchingGame").addEventListener("click", function(e) {
+        var term = e.target.closest(".match-term");
+        var dropzone = e.target.closest(".slot-dropzone");
+
+        if (term && !dropzone) {
+          // Clicking a term in the pool: select it
+          document.querySelectorAll(".match-term.selected").forEach(function(t) { t.classList.remove("selected"); });
+          term.classList.add("selected");
+          selectedTerm = term;
+          return;
+        }
+
+        if (dropzone && selectedTerm) {
+          // Clicking a slot while a term is selected: place it
+          var existing = dropzone.querySelector(".match-term");
+          if (existing) {
+            document.getElementById("termsPool").appendChild(existing);
+          }
+          var placeholder = dropzone.querySelector(".slot-placeholder");
+          if (placeholder) placeholder.style.display = "none";
+          dropzone.appendChild(selectedTerm);
+          selectedTerm.classList.remove("selected");
+          selectedTerm = null;
+        }
+      });
+
+      // --- Check button ---
+      document.getElementById("btnCheckMatching").addEventListener("click", function() {
+        checkMatching();
+      });
+    }
+
+    function checkMatching() {
+      var slots = document.querySelectorAll(".match-slot");
+      var correct = 0;
+      var total = matchingItems.length;
+
+      slots.forEach(function(slot) {
+        var expected = slot.dataset.expected;
+        var dropzone = slot.querySelector(".slot-dropzone");
+        var placedTerm = dropzone.querySelector(".match-term");
+
+        // Reset previous states
+        dropzone.classList.remove("match-correct", "match-incorrect");
+
+        if (placedTerm && placedTerm.dataset.term === expected) {
+          dropzone.classList.add("match-correct");
+          placedTerm.setAttribute("draggable", "false");
+          correct++;
+        } else if (placedTerm) {
+          dropzone.classList.add("match-incorrect");
+          // Send incorrect term back to pool after a short delay
+          setTimeout(function() {
+            dropzone.classList.remove("match-incorrect");
+            var placeholder = dropzone.querySelector(".slot-placeholder");
+            if (placeholder) placeholder.style.display = "";
+            document.getElementById("termsPool").appendChild(placedTerm);
+          }, 1200);
+        }
+      });
+
+      var fb = document.getElementById("matchingFeedback");
+      fb.innerHTML = '<strong>' + correct + '/' + total + '</strong> ' + L.matchingScore;
+      fb.className = "matching-feedback " + (correct === total ? "all-correct" : "partial");
+
+      if (correct === total) {
+        matchingCompleted = true;
+        document.getElementById("btnToFlashcards").disabled = false;
+        document.getElementById("btnCheckMatching").style.display = "none";
+      }
+    }
 
     // --- Flashcards ---
     var flashcards = data.flashcards || [];
@@ -319,7 +581,6 @@
       document.getElementById("quizContent").innerHTML = html;
       quizAnswered = false;
 
-      // Choice selection
       var selectedIndex = -1;
       document.getElementById("quizContent").addEventListener("click", function handler(e) {
         if (quizAnswered) return;
@@ -331,7 +592,6 @@
         document.getElementById("btnValidate").disabled = false;
       });
 
-      // Validate
       document.getElementById("btnValidate").addEventListener("click", function() {
         if (quizAnswered || selectedIndex < 0) return;
         quizAnswered = true;
@@ -339,7 +599,6 @@
         var isCorrect = selectedIndex === q.correct;
         if (isCorrect) quizScore++;
 
-        // Highlight choices
         document.querySelectorAll(".quiz-choice").forEach(function(c) {
           var idx = parseInt(c.dataset.index);
           c.style.cursor = "default";
@@ -350,7 +609,6 @@
           }
         });
 
-        // Show feedback
         var fb = document.getElementById("quizFeedback");
         if (isCorrect) {
           fb.className = "quiz-feedback correct";
@@ -360,7 +618,6 @@
           fb.innerHTML = '<strong>' + L.incorrect + '</strong> ' + L.correctAnswer + escapeHTML(q.choices[q.correct]) + '<br>' + escapeHTML(q.explanation);
         }
 
-        // Replace validate button with next
         var btnContainer = document.querySelector("#quizContent .btn-container");
         if (currentQuizQ < quiz.length - 1) {
           btnContainer.innerHTML = '<button class="btn btn-primary" id="btnNextQ">' + L.next + '</button>';
@@ -387,23 +644,23 @@
       document.getElementById("quizContent").innerHTML = html;
 
       document.getElementById("btnFinish").addEventListener("click", function() {
-        goToSection(5);
+        goToSection(6);
         ScormAPI.setScore(100);
         ScormAPI.setStatus("completed");
         ScormAPI.finish();
       });
     }
 
-    // --- Section Navigation ---
+    // --- Section Navigation (now 6 sections: 5 content + completion) ---
     function goToSection(num) {
-      var sections = ["section-summary", "section-glossary", "section-flashcards", "section-quiz", "section-complete"];
+      var sections = ["section-summary", "section-glossary", "section-matching", "section-flashcards", "section-quiz", "section-complete"];
       sections.forEach(function(id) {
         document.getElementById(id).classList.remove("active");
       });
       var targetId = sections[num - 1];
       if (targetId) document.getElementById(targetId).classList.add("active");
 
-      // Update progress bar
+      // Update progress bar (5 steps)
       var steps = document.querySelectorAll(".progress-step");
       var connectors = document.querySelectorAll(".progress-connector");
       steps.forEach(function(step, i) {
@@ -411,7 +668,7 @@
         if (i + 1 < num) {
           step.classList.add("done");
           step.querySelector(".step-icon").innerHTML = "&#10003;";
-        } else if (i + 1 === num && num <= 4) {
+        } else if (i + 1 === num && num <= 5) {
           step.classList.add("active");
         }
       });
@@ -419,17 +676,22 @@
         conn.classList.toggle("done", i + 1 < num);
       });
 
-      // SCORM tracking
-      if (num <= 4) {
+      // SCORM tracking — 5 sections = 20% each
+      if (num <= 5) {
         ScormAPI.setLocation("section_" + num);
-        ScormAPI.setScore((num - 1) * 25);
+        ScormAPI.setScore((num - 1) * 20);
       }
 
       currentSection = num;
       window.scrollTo(0, 0);
 
-      // Start quiz rendering when entering section 4
-      if (num === 4) {
+      // Init matching when entering section 3
+      if (num === 3) {
+        initMatching();
+      }
+
+      // Start quiz rendering when entering section 5
+      if (num === 5) {
         currentQuizQ = 0;
         quizScore = 0;
         renderQuizQuestion();
@@ -437,8 +699,9 @@
     }
 
     document.getElementById("btnToGlossary").addEventListener("click", function() { goToSection(2); });
-    document.getElementById("btnToFlashcards").addEventListener("click", function() { goToSection(3); });
-    document.getElementById("btnToQuiz").addEventListener("click", function() { goToSection(4); });
+    document.getElementById("btnToMatching").addEventListener("click", function() { goToSection(3); });
+    document.getElementById("btnToFlashcards").addEventListener("click", function() { goToSection(4); });
+    document.getElementById("btnToQuiz").addEventListener("click", function() { goToSection(5); });
 
     // --- Helpers ---
     function escapeHTML(str) {
@@ -447,7 +710,10 @@
       return div.innerHTML;
     }
 
-    // Handle window close
+    function escapeAttr(str) {
+      return (str || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
     window.addEventListener("beforeunload", function() {
       ScormAPI.finish();
     });
