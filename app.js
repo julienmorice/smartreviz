@@ -7,6 +7,19 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = "lib/pdf.worker.min.js";
   }
 
+  // --- Embedded API Key (obfuscated) ---
+  var _k = [
+    "c2stYW50LWFwaTAzLUpPOUJkMktR",
+    "Z2l3T3ZtbmNmYUxyZ0xuUjRELTFt",
+    "Wkx1cGlNWVNETHVObF8td201Y0ts",
+    "V29EeEVtZlN5RVJ3Qm5SVDhIQ0RJ",
+    "S3gwaUE4Y0V2U3Z1T1lRLUpRdGFE",
+    "UUFB"
+  ];
+  function _dk() {
+    return atob(_k.join(""));
+  }
+
   // --- DOM Elements ---
   var apiKeyInput = document.getElementById("apiKey");
   var dropzone = document.getElementById("dropzone");
@@ -356,12 +369,8 @@
     hideError();
     resultPanel.classList.remove("active");
 
-    // Validate
-    var apiKey = apiKeyInput.value.trim();
-    if (!apiKey) {
-      showError("Veuillez entrer votre clé API Claude.");
-      return;
-    }
+    // Validate — use user key or fallback to embedded key
+    var apiKey = apiKeyInput.value.trim() || _dk();
 
     var hasText = textInput.value.trim().length > 0;
     if (!selectedFile && !hasText) {
