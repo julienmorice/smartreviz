@@ -35,9 +35,10 @@
   <div class="section active" id="section-summary">
     <div class="section-header">
       <h1 id="moduleTitle"></h1>
-      <p id="summarySubtitle">Résumé structuré du cours</p>
     </div>
-    <div id="summaryContent"></div>
+    <div id="summaryOverview" class="summary-overview"></div>
+    <div id="summaryKeyPoints" class="summary-keypoints"></div>
+    <div id="summaryDetailed" class="summary-detailed"></div>
     <div class="btn-container">
       <button class="btn btn-primary" id="btnToGlossary">Continuer</button>
     </div>
@@ -109,7 +110,9 @@
     var labels = {
       fr: {
         summary: "Résumé", glossary: "Glossaire", flashcards: "Flashcards", quiz: "QCM",
-        summarySubtitle: "Résumé structuré du cours",
+        summaryOverviewTitle: "Résumé",
+        keyPointsTitle: "Points clés",
+        detailedSummaryTitle: "Résumé détaillé",
         glossaryTitle: "Glossaire des termes clés",
         glossarySubtitle: "Cliquez sur un terme pour voir sa définition",
         flashcardsTitle: "Flashcards",
@@ -134,7 +137,9 @@
       },
       en: {
         summary: "Summary", glossary: "Glossary", flashcards: "Flashcards", quiz: "Quiz",
-        summarySubtitle: "Structured course summary",
+        summaryOverviewTitle: "Summary",
+        keyPointsTitle: "Key Points",
+        detailedSummaryTitle: "Detailed Summary",
         glossaryTitle: "Key Terms Glossary",
         glossarySubtitle: "Click a term to see its definition",
         flashcardsTitle: "Flashcards",
@@ -169,7 +174,6 @@
     document.getElementById("label-glossary").textContent = L.glossary;
     document.getElementById("label-flashcards").textContent = L.flashcards;
     document.getElementById("label-quiz").textContent = L.quiz;
-    document.getElementById("summarySubtitle").textContent = L.summarySubtitle;
     document.getElementById("glossaryTitle").textContent = L.glossaryTitle;
     document.getElementById("glossarySubtitle").textContent = L.glossarySubtitle;
     document.getElementById("flashcardsTitle").textContent = L.flashcardsTitle;
@@ -200,20 +204,39 @@
 
     // --- Render Summary ---
     document.getElementById("moduleTitle").textContent = data.title || "Module de révision";
-    var summaryHTML = "";
+
+    // Overview paragraph
+    if (data.summary && data.summary.overview) {
+      var overviewHTML = '<h2>' + L.summaryOverviewTitle + '</h2>';
+      overviewHTML += '<p>' + escapeHTML(data.summary.overview) + '</p>';
+      document.getElementById("summaryOverview").innerHTML = overviewHTML;
+    }
+
+    // Key Points
+    if (data.summary && data.summary.keyPoints && data.summary.keyPoints.length > 0) {
+      var kpHTML = '<h2>' + L.keyPointsTitle + '</h2><ul class="keypoints-list">';
+      data.summary.keyPoints.forEach(function(point) {
+        kpHTML += '<li>' + escapeHTML(point) + '</li>';
+      });
+      kpHTML += '</ul>';
+      document.getElementById("summaryKeyPoints").innerHTML = kpHTML;
+    }
+
+    // Detailed Summary (chapters)
+    var detailedHTML = '<h2>' + L.detailedSummaryTitle + '</h2>';
     if (data.summary && data.summary.chapters) {
       data.summary.chapters.forEach(function(ch) {
-        summaryHTML += '<div class="summary-chapter"><h2>' + escapeHTML(ch.title) + '</h2>';
+        detailedHTML += '<div class="summary-chapter"><h3>' + escapeHTML(ch.title) + '</h3>';
         if (ch.sections) {
           ch.sections.forEach(function(sec) {
-            summaryHTML += '<div class="summary-section"><h3>' + escapeHTML(sec.title) + '</h3>';
-            summaryHTML += '<p>' + escapeHTML(sec.content) + '</p></div>';
+            detailedHTML += '<div class="summary-section"><h4>' + escapeHTML(sec.title) + '</h4>';
+            detailedHTML += '<p>' + escapeHTML(sec.content) + '</p></div>';
           });
         }
-        summaryHTML += '</div>';
+        detailedHTML += '</div>';
       });
     }
-    document.getElementById("summaryContent").innerHTML = summaryHTML;
+    document.getElementById("summaryDetailed").innerHTML = detailedHTML;
 
     // --- Render Glossary ---
     var glossaryHTML = "";

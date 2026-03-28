@@ -126,22 +126,89 @@ body {
 }
 
 /* ---- Summary ---- */
-.summary-chapter {
+.summary-overview {
   margin-bottom: 28px;
 }
 
-.summary-chapter h2 {
-  font-size: 22px;
+.summary-overview h2 {
+  font-size: 24px;
   color: var(--primary);
   margin-bottom: 12px;
   padding-bottom: 6px;
   border-bottom: 2px solid var(--secondary);
 }
 
-.summary-section h3 {
-  font-size: 17px;
+.summary-overview p {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.summary-keypoints {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 28px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.summary-keypoints h2 {
+  font-size: 20px;
+  color: var(--primary);
+  margin-bottom: 14px;
+}
+
+.keypoints-list {
+  list-style: none;
+  padding: 0;
+}
+
+.keypoints-list li {
+  position: relative;
+  padding: 10px 0 10px 24px;
+  border-bottom: 1px solid #eee;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.keypoints-list li:last-child {
+  border-bottom: none;
+}
+
+.keypoints-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.summary-detailed h2 {
+  font-size: 22px;
+  color: var(--primary);
+  margin-bottom: 16px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--secondary);
+}
+
+.summary-chapter {
+  margin-bottom: 24px;
+}
+
+.summary-chapter h3 {
+  font-size: 19px;
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+
+.summary-section h4 {
+  font-size: 16px;
   color: var(--secondary);
-  margin: 16px 0 6px;
+  margin: 12px 0 6px;
 }
 
 .summary-section p {

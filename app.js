@@ -180,7 +180,10 @@
     var systemPrompt =
       "Tu es un assistant pédagogique spécialisé dans la création de modules de révision.\n" +
       "À partir du contenu de cours fourni, tu DOIS générer un objet JSON contenant EXACTEMENT ces 4 clés :\n\n" +
-      '1. "summary" : un résumé structuré. Objet avec une clé "chapters" (tableau). Chaque chapitre a "title" (string) et "sections" (tableau d\'objets avec "title" et "content").\n\n' +
+      '1. "summary" : un objet avec 3 clés :\n' +
+      '   - "overview" : string — un paragraphe court (4-6 phrases) qui résume l\'ensemble du document de manière synthétique\n' +
+      '   - "keyPoints" : tableau de 3 à 5 strings — les points clés essentiels du cours, chaque point est une phrase complète\n' +
+      '   - "chapters" : tableau de chapitres. Chaque chapitre a "title" (string) et "sections" (tableau d\'objets avec "title" et "content")\n\n' +
       '2. "glossary" : tableau de 10 à 15 objets, chacun avec "term" (string) et "definition" (string).\n\n' +
       '3. "flashcards" : tableau de EXACTEMENT 10 objets. Chaque objet a "type" ("concept" ou "question"), "front" (string) et "back" (string). Mélange les deux types.\n\n' +
       '4. "quiz" : tableau de EXACTEMENT 10 objets. Chaque objet a :\n' +
