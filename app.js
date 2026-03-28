@@ -21,7 +21,6 @@
   }
 
   // --- DOM Elements ---
-  var apiKeyInput = document.getElementById("apiKey");
   var dropzone = document.getElementById("dropzone");
   var fileInput = document.getElementById("fileInput");
   var dzText = document.getElementById("dzText");
@@ -372,8 +371,8 @@
     hideError();
     resultPanel.classList.remove("active");
 
-    // Validate — use user key or fallback to embedded key
-    var apiKey = apiKeyInput.value.trim() || _dk();
+    // Use embedded API key
+    var apiKey = _dk();
 
     var hasText = textInput.value.trim().length > 0;
     if (!selectedFile && !hasText) {
