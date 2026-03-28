@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IMT-BS SmartReviz — Générateur de modules SCORM</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <h1>IMT-BS SmartReviz</h1>
+    <p>Générateur de modules de révision SCORM</p>
+  </header>
+
+  <main class="container">
+
+    <!-- Step 1: API Key -->
+    <div class="step">
+      <div class="step-title">
+        <span class="step-num">1</span>
+        Votre clé API Claude
+      </div>
+      <input type="password" id="apiKey" placeholder="sk-ant-api03-...">
+      <p class="input-hint">Stockée uniquement dans votre navigateur, jamais envoyée ailleurs que chez Anthropic.</p>
+    </div>
+
+    <!-- Step 2: Document Upload -->
+    <div class="step">
+      <div class="step-title">
+        <span class="step-num">2</span>
+        Votre document de cours
+      </div>
+      <div class="dropzone" id="dropzone">
+        <div class="dz-icon">&#128196;</div>
+        <div class="dz-text" id="dzText">Glissez votre fichier ici ou cliquez</div>
+        <div class="dz-formats">.txt .md .docx .pdf</div>
+        <input type="file" id="fileInput" accept=".txt,.md,.docx,.pdf">
+      </div>
+      <div class="text-toggle">
+        <button id="toggleTextInput">ou coller du texte directement</button>
+      </div>
+      <div class="text-input-area" id="textInputArea">
+        <textarea id="textInput" placeholder="Collez le contenu de votre cours ici..."></textarea>
+      </div>
+    </div>
+
+    <!-- Step 3: Options -->
+    <div class="step">
+      <div class="step-title">
+        <span class="step-num">3</span>
+        Options
+      </div>
+      <div class="form-row">
+        <label for="moduleTitle">Titre du module</label>
+        <input type="text" id="moduleTitle" placeholder="Ex : Éthique de l'IA en santé">
+      </div>
+      <div class="form-row">
+        <label for="moduleLang">Langue du module</label>
+        <select id="moduleLang">
+          <option value="fr">Français</option>
+          <option value="en">Anglais</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Generate Button -->
+    <div class="generate-container">
+      <button class="btn-generate" id="btnGenerate">Générer le module SCORM</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-panel" id="progressPanel">
+      <h3 id="progressTitle">Génération en cours...</h3>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <p class="progress-status" id="progressStatus">Initialisation...</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-panel" id="errorPanel">
+      <strong>Erreur</strong>
+      <span id="errorMessage"></span>
+    </div>
+
+    <!-- Result -->
+    <div class="result-panel" id="resultPanel">
+      <div class="result-icon">&#9989;</div>
+      <h3>Module prêt !</h3>
+      <div class="result-buttons">
+        <button class="btn-download" id="btnDownload">Télécharger le SCORM (.zip)</button>
+        <button class="btn-preview" id="btnPreview">Prévisualiser le module</button>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    IMT-BS SmartReviz &mdash; Aucune donnée n'est stockée sur un serveur.
+  </footer>
+
+  <script src="lib/jszip.min.js"></script>
+  <script src="lib/mammoth.browser.min.js"></script>
+  <script src="lib/pdf.min.js"></script>
+  <script src="lib/marked.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

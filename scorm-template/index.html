@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartReviz Module</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Progress Bar -->
+  <nav class="progress-bar" id="progressBar">
+    <div class="progress-step active" data-step="1">
+      <span class="step-icon">1</span>
+      <span class="step-label" id="label-summary">Résumé</span>
+    </div>
+    <div class="progress-connector" id="conn-1"></div>
+    <div class="progress-step" data-step="2">
+      <span class="step-icon">2</span>
+      <span class="step-label" id="label-glossary">Glossaire</span>
+    </div>
+    <div class="progress-connector" id="conn-2"></div>
+    <div class="progress-step" data-step="3">
+      <span class="step-icon">3</span>
+      <span class="step-label" id="label-flashcards">Flashcards</span>
+    </div>
+    <div class="progress-connector" id="conn-3"></div>
+    <div class="progress-step" data-step="4">
+      <span class="step-icon">4</span>
+      <span class="step-label" id="label-quiz">QCM</span>
+    </div>
+  </nav>
+
+  <!-- Section 1: Summary -->
+  <div class="section active" id="section-summary">
+    <div class="section-header">
+      <h1 id="moduleTitle"></h1>
+      <p id="summarySubtitle">Résumé structuré du cours</p>
+    </div>
+    <div id="summaryContent"></div>
+    <div class="btn-container">
+      <button class="btn btn-primary" id="btnToGlossary">Continuer</button>
+    </div>
+  </div>
+
+  <!-- Section 2: Glossary -->
+  <div class="section" id="section-glossary">
+    <div class="section-header">
+      <h1 id="glossaryTitle">Glossaire des termes clés</h1>
+      <p id="glossarySubtitle">Cliquez sur un terme pour voir sa définition</p>
+    </div>
+    <div id="glossaryContent"></div>
+    <div class="btn-container">
+      <button class="btn btn-primary" id="btnToFlashcards">Continuer</button>
+    </div>
+  </div>
+
+  <!-- Section 3: Flashcards -->
+  <div class="section" id="section-flashcards">
+    <div class="section-header">
+      <h1 id="flashcardsTitle">Flashcards</h1>
+      <p id="flashcardsSubtitle">Cliquez sur la carte pour la retourner</p>
+    </div>
+    <div class="flashcard-container">
+      <div class="flashcard" id="flashcard">
+        <div class="flashcard-face flashcard-front" id="flashcardFront">
+          <div class="card-type" id="cardType"></div>
+          <div class="card-text" id="cardFront"></div>
+          <div class="card-hint" id="cardHint">Cliquez pour retourner</div>
+        </div>
+        <div class="flashcard-face flashcard-back">
+          <div class="card-text" id="cardBack"></div>
+        </div>
+      </div>
+    </div>
+    <div class="flashcard-nav">
+      <button id="btnPrevCard" disabled>&#9664;</button>
+      <span class="flashcard-counter" id="cardCounter">1/10</span>
+      <button id="btnNextCard">&#9654;</button>
+    </div>
+    <div class="btn-container">
+      <button class="btn btn-primary" id="btnToQuiz" disabled>Continuer vers le QCM</button>
+    </div>
+  </div>
+
+  <!-- Section 4: Quiz -->
+  <div class="section" id="section-quiz">
+    <div class="section-header">
+      <h1 id="quizTitle">QCM</h1>
+      <p id="quizSubtitle">Testez vos connaissances</p>
+    </div>
+    <div id="quizContent"></div>
+  </div>
+
+  <!-- Section 5: Completion -->
+  <div class="section" id="section-complete">
+    <div class="completion-screen">
+      <div class="check-icon">&#10003;</div>
+      <h1 id="completeTitle">Module terminé !</h1>
+      <p id="completeMessage">Vous avez complété l'ensemble du module de révision.</p>
+    </div>
+  </div>
+
+  <script src="scorm-api.js"></script>
+  <script src="module-data.js"></script>
+  <script>
+  (function() {
+    // --- i18n ---
+    var labels = {
+      fr: {
+        summary: "Résumé", glossary: "Glossaire", flashcards: "Flashcards", quiz: "QCM",
+        summarySubtitle: "Résumé structuré du cours",
+        glossaryTitle: "Glossaire des termes clés",
+        glossarySubtitle: "Cliquez sur un terme pour voir sa définition",
+        flashcardsTitle: "Flashcards",
+        flashcardsSubtitle: "Cliquez sur la carte pour la retourner",
+        quizTitle: "QCM",
+        quizSubtitle: "Testez vos connaissances",
+        continue: "Continuer",
+        continueToQuiz: "Continuer vers le QCM",
+        validate: "Valider",
+        next: "Question suivante",
+        correct: "Correct !",
+        incorrect: "Incorrect",
+        correctAnswer: "La bonne réponse était : ",
+        score: "Votre score",
+        finishModule: "Terminer le module",
+        completeTitle: "Module terminé !",
+        completeMessage: "Vous avez complété l'ensemble du module de révision.",
+        clickToFlip: "Cliquez pour retourner",
+        concept: "Concept",
+        question: "Question",
+        card: "Carte"
+      },
+      en: {
+        summary: "Summary", glossary: "Glossary", flashcards: "Flashcards", quiz: "Quiz",
+        summarySubtitle: "Structured course summary",
+        glossaryTitle: "Key Terms Glossary",
+        glossarySubtitle: "Click a term to see its definition",
+        flashcardsTitle: "Flashcards",
+        flashcardsSubtitle: "Click the card to flip it",
+        quizTitle: "Quiz",
+        quizSubtitle: "Test your knowledge",
+        continue: "Continue",
+        continueToQuiz: "Continue to the Quiz",
+        validate: "Submit",
+        next: "Next question",
+        correct: "Correct!",
+        incorrect: "Incorrect",
+        correctAnswer: "The correct answer was: ",
+        score: "Your score",
+        finishModule: "Finish module",
+        completeTitle: "Module completed!",
+        completeMessage: "You have completed the entire revision module.",
+        clickToFlip: "Click to flip",
+        concept: "Concept",
+        question: "Question",
+        card: "Card"
+      }
+    };
+
+    var lang = (MODULE_DATA.language || "fr").substring(0, 2).toLowerCase();
+    if (!labels[lang]) lang = "fr";
+    var L = labels[lang];
+    document.documentElement.lang = lang;
+
+    // --- Apply labels ---
+    document.getElementById("label-summary").textContent = L.summary;
+    document.getElementById("label-glossary").textContent = L.glossary;
+    document.getElementById("label-flashcards").textContent = L.flashcards;
+    document.getElementById("label-quiz").textContent = L.quiz;
+    document.getElementById("summarySubtitle").textContent = L.summarySubtitle;
+    document.getElementById("glossaryTitle").textContent = L.glossaryTitle;
+    document.getElementById("glossarySubtitle").textContent = L.glossarySubtitle;
+    document.getElementById("flashcardsTitle").textContent = L.flashcardsTitle;
+    document.getElementById("flashcardsSubtitle").textContent = L.flashcardsSubtitle;
+    document.getElementById("quizTitle").textContent = L.quizTitle;
+    document.getElementById("quizSubtitle").textContent = L.quizSubtitle;
+    document.getElementById("btnToGlossary").textContent = L.continue;
+    document.getElementById("btnToFlashcards").textContent = L.continue;
+    document.getElementById("btnToQuiz").textContent = L.continueToQuiz;
+    document.getElementById("cardHint").textContent = L.clickToFlip;
+    document.getElementById("completeTitle").textContent = L.completeTitle;
+    document.getElementById("completeMessage").textContent = L.completeMessage;
+
+    // --- SCORM Init ---
+    ScormAPI.init();
+    ScormAPI.setStatus("incomplete");
+    ScormAPI.setLocation("section_1");
+    ScormAPI.setScore(0);
+
+    // --- State ---
+    var currentSection = 1;
+    var currentCard = 0;
+    var maxCardSeen = 0;
+    var currentQuizQ = 0;
+    var quizScore = 0;
+    var quizAnswered = false;
+    var data = MODULE_DATA;
+
+    // --- Render Summary ---
+    document.getElementById("moduleTitle").textContent = data.title || "Module de révision";
+    var summaryHTML = "";
+    if (data.summary && data.summary.chapters) {
+      data.summary.chapters.forEach(function(ch) {
+        summaryHTML += '<div class="summary-chapter"><h2>' + escapeHTML(ch.title) + '</h2>';
+        if (ch.sections) {
+          ch.sections.forEach(function(sec) {
+            summaryHTML += '<div class="summary-section"><h3>' + escapeHTML(sec.title) + '</h3>';
+            summaryHTML += '<p>' + escapeHTML(sec.content) + '</p></div>';
+          });
+        }
+        summaryHTML += '</div>';
+      });
+    }
+    document.getElementById("summaryContent").innerHTML = summaryHTML;
+
+    // --- Render Glossary ---
+    var glossaryHTML = "";
+    if (data.glossary) {
+      data.glossary.forEach(function(item) {
+        glossaryHTML += '<div class="glossary-item">';
+        glossaryHTML += '<div class="glossary-term">' + escapeHTML(item.term) + '</div>';
+        glossaryHTML += '<div class="glossary-definition">' + escapeHTML(item.definition) + '</div>';
+        glossaryHTML += '</div>';
+      });
+    }
+    document.getElementById("glossaryContent").innerHTML = glossaryHTML;
+
+    // Accordion behavior
+    document.getElementById("glossaryContent").addEventListener("click", function(e) {
+      var term = e.target.closest(".glossary-term");
+      if (!term) return;
+      var item = term.parentElement;
+      item.classList.toggle("open");
+    });
+
+    // --- Flashcards ---
+    var flashcards = data.flashcards || [];
+
+    function renderCard() {
+      var card = flashcards[currentCard];
+      if (!card) return;
+      var flashcardEl = document.getElementById("flashcard");
+      flashcardEl.classList.remove("flipped");
+      document.getElementById("cardType").textContent = card.type === "concept" ? L.concept : L.question;
+      document.getElementById("cardFront").textContent = card.front;
+      document.getElementById("cardBack").textContent = card.back;
+      document.getElementById("cardCounter").textContent = L.card + " " + (currentCard + 1) + "/" + flashcards.length;
+      document.getElementById("btnPrevCard").disabled = currentCard === 0;
+      document.getElementById("btnNextCard").disabled = currentCard === flashcards.length - 1;
+
+      if (currentCard > maxCardSeen) maxCardSeen = currentCard;
+      if (maxCardSeen >= flashcards.length - 1) {
+        document.getElementById("btnToQuiz").disabled = false;
+      }
+    }
+
+    document.getElementById("flashcard").addEventListener("click", function() {
+      this.classList.toggle("flipped");
+    });
+
+    document.getElementById("btnPrevCard").addEventListener("click", function() {
+      if (currentCard > 0) { currentCard--; renderCard(); }
+    });
+
+    document.getElementById("btnNextCard").addEventListener("click", function() {
+      if (currentCard < flashcards.length - 1) { currentCard++; renderCard(); }
+    });
+
+    renderCard();
+
+    // --- Quiz ---
+    var quiz = data.quiz || [];
+
+    function renderQuizQuestion() {
+      if (currentQuizQ >= quiz.length) {
+        showQuizScore();
+        return;
+      }
+      var q = quiz[currentQuizQ];
+      var html = '<div class="quiz-question">';
+      html += '<h3>' + L.question + ' ' + (currentQuizQ + 1) + '/' + quiz.length + '</h3>';
+      html += '<p>' + escapeHTML(q.question) + '</p>';
+      html += '<ul class="quiz-choices">';
+      q.choices.forEach(function(choice, i) {
+        html += '<li class="quiz-choice" data-index="' + i + '">';
+        html += '<span class="radio"></span>';
+        html += '<span>' + escapeHTML(choice) + '</span>';
+        html += '</li>';
+      });
+      html += '</ul>';
+      html += '<div class="btn-container"><button class="btn btn-accent" id="btnValidate" disabled>' + L.validate + '</button></div>';
+      html += '<div class="quiz-feedback" id="quizFeedback"></div>';
+      html += '</div>';
+      document.getElementById("quizContent").innerHTML = html;
+      quizAnswered = false;
+
+      // Choice selection
+      var selectedIndex = -1;
+      document.getElementById("quizContent").addEventListener("click", function handler(e) {
+        if (quizAnswered) return;
+        var choiceEl = e.target.closest(".quiz-choice");
+        if (!choiceEl) return;
+        document.querySelectorAll(".quiz-choice").forEach(function(c) { c.classList.remove("selected"); });
+        choiceEl.classList.add("selected");
+        selectedIndex = parseInt(choiceEl.dataset.index);
+        document.getElementById("btnValidate").disabled = false;
+      });
+
+      // Validate
+      document.getElementById("btnValidate").addEventListener("click", function() {
+        if (quizAnswered || selectedIndex < 0) return;
+        quizAnswered = true;
+        var q = quiz[currentQuizQ];
+        var isCorrect = selectedIndex === q.correct;
+        if (isCorrect) quizScore++;
+
+        // Highlight choices
+        document.querySelectorAll(".quiz-choice").forEach(function(c) {
+          var idx = parseInt(c.dataset.index);
+          c.style.cursor = "default";
+          if (idx === q.correct) {
+            c.classList.add("correct");
+          } else if (idx === selectedIndex && !isCorrect) {
+            c.classList.add("incorrect");
+          }
+        });
+
+        // Show feedback
+        var fb = document.getElementById("quizFeedback");
+        if (isCorrect) {
+          fb.className = "quiz-feedback correct";
+          fb.innerHTML = '<strong>' + L.correct + '</strong> ' + escapeHTML(q.explanation);
+        } else {
+          fb.className = "quiz-feedback incorrect";
+          fb.innerHTML = '<strong>' + L.incorrect + '</strong> ' + L.correctAnswer + escapeHTML(q.choices[q.correct]) + '<br>' + escapeHTML(q.explanation);
+        }
+
+        // Replace validate button with next
+        var btnContainer = document.querySelector("#quizContent .btn-container");
+        if (currentQuizQ < quiz.length - 1) {
+          btnContainer.innerHTML = '<button class="btn btn-primary" id="btnNextQ">' + L.next + '</button>';
+          document.getElementById("btnNextQ").addEventListener("click", function() {
+            currentQuizQ++;
+            renderQuizQuestion();
+          });
+        } else {
+          btnContainer.innerHTML = '<button class="btn btn-primary" id="btnShowScore">' + L.score + '</button>';
+          document.getElementById("btnShowScore").addEventListener("click", function() {
+            currentQuizQ++;
+            showQuizScore();
+          });
+        }
+      });
+    }
+
+    function showQuizScore() {
+      var html = '<div class="quiz-score">';
+      html += '<div class="score-value">' + quizScore + '/' + quiz.length + '</div>';
+      html += '<div class="score-label">' + L.score + '</div>';
+      html += '</div>';
+      html += '<div class="btn-container"><button class="btn btn-primary" id="btnFinish">' + L.finishModule + '</button></div>';
+      document.getElementById("quizContent").innerHTML = html;
+
+      document.getElementById("btnFinish").addEventListener("click", function() {
+        goToSection(5);
+        ScormAPI.setScore(100);
+        ScormAPI.setStatus("completed");
+        ScormAPI.finish();
+      });
+    }
+
+    // --- Section Navigation ---
+    function goToSection(num) {
+      var sections = ["section-summary", "section-glossary", "section-flashcards", "section-quiz", "section-complete"];
+      sections.forEach(function(id) {
+        document.getElementById(id).classList.remove("active");
+      });
+      var targetId = sections[num - 1];
+      if (targetId) document.getElementById(targetId).classList.add("active");
+
+      // Update progress bar
+      var steps = document.querySelectorAll(".progress-step");
+      var connectors = document.querySelectorAll(".progress-connector");
+      steps.forEach(function(step, i) {
+        step.classList.remove("active", "done");
+        if (i + 1 < num) {
+          step.classList.add("done");
+          step.querySelector(".step-icon").innerHTML = "&#10003;";
+        } else if (i + 1 === num && num <= 4) {
+          step.classList.add("active");
+        }
+      });
+      connectors.forEach(function(conn, i) {
+        conn.classList.toggle("done", i + 1 < num);
+      });
+
+      // SCORM tracking
+      if (num <= 4) {
+        ScormAPI.setLocation("section_" + num);
+        ScormAPI.setScore((num - 1) * 25);
+      }
+
+      currentSection = num;
+      window.scrollTo(0, 0);
+
+      // Start quiz rendering when entering section 4
+      if (num === 4) {
+        currentQuizQ = 0;
+        quizScore = 0;
+        renderQuizQuestion();
+      }
+    }
+
+    document.getElementById("btnToGlossary").addEventListener("click", function() { goToSection(2); });
+    document.getElementById("btnToFlashcards").addEventListener("click", function() { goToSection(3); });
+    document.getElementById("btnToQuiz").addEventListener("click", function() { goToSection(4); });
+
+    // --- Helpers ---
+    function escapeHTML(str) {
+      var div = document.createElement("div");
+      div.textContent = str || "";
+      return div.innerHTML;
+    }
+
+    // Handle window close
+    window.addEventListener("beforeunload", function() {
+      ScormAPI.finish();
+    });
+  })();
+  </script>
+</body>
+</html>
