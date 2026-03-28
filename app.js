@@ -166,23 +166,26 @@
 
     var systemPrompt =
       "Tu es un assistant pédagogique spécialisé dans la création de modules de révision.\n" +
-      "À partir du contenu de cours fourni, génère un JSON structuré contenant :\n\n" +
-      '1. "summary" : un résumé structuré avec chapitres (h2) et sections (h3) + paragraphes\n' +
-      '2. "glossary" : 10-15 termes clés avec définitions concises\n' +
-      '3. "flashcards" : exactement 10 cartes, mix concept/définition et question/réponse\n' +
-      '4. "quiz" : exactement 10 questions QCM avec :\n' +
-      '   - "question" : l\'énoncé\n' +
-      '   - "choices" : tableau de 4 propositions\n' +
-      '   - "correct" : index de la bonne réponse (0-3)\n' +
-      '   - "explanation" : explication courte de la bonne réponse\n\n' +
+      "À partir du contenu de cours fourni, tu DOIS générer un objet JSON contenant EXACTEMENT ces 4 clés :\n\n" +
+      '1. "summary" : un résumé structuré. Objet avec une clé "chapters" (tableau). Chaque chapitre a "title" (string) et "sections" (tableau d\'objets avec "title" et "content").\n\n' +
+      '2. "glossary" : tableau de 10 à 15 objets, chacun avec "term" (string) et "definition" (string).\n\n' +
+      '3. "flashcards" : tableau de EXACTEMENT 10 objets. Chaque objet a "type" ("concept" ou "question"), "front" (string) et "back" (string). Mélange les deux types.\n\n' +
+      '4. "quiz" : tableau de EXACTEMENT 10 objets. Chaque objet a :\n' +
+      '   - "question" : string (l\'énoncé)\n' +
+      '   - "choices" : tableau de exactement 4 strings\n' +
+      '   - "correct" : integer (0, 1, 2 ou 3 — index de la bonne réponse)\n' +
+      '   - "explanation" : string (explication courte)\n\n' +
       "Langue de sortie : " + langLabel + "\n\n" +
-      "Règles :\n" +
+      "Règles STRICTES :\n" +
+      "- Tu DOIS inclure les 4 sections : summary, glossary, flashcards ET quiz\n" +
+      "- flashcards : EXACTEMENT 10 cartes, ni plus ni moins\n" +
+      "- quiz : EXACTEMENT 10 questions, ni plus ni moins\n" +
       "- Le résumé doit être synthétique mais couvrir l'ensemble du document\n" +
       "- Les questions doivent tester la compréhension, pas la mémorisation de détails\n" +
       "- Les distracteurs (mauvaises réponses) doivent être plausibles\n" +
       "- Les flashcards doivent couvrir les concepts fondamentaux\n" +
       "- Le glossaire doit contenir les termes techniques essentiels\n\n" +
-      "Réponds UNIQUEMENT avec le JSON, sans markdown, sans commentaire, sans bloc de code.";
+      "IMPORTANT : Réponds UNIQUEMENT avec l'objet JSON brut. Pas de ```json, pas de commentaire, pas de texte avant ou après. Juste le JSON.";
 
     // Truncate if necessary (~100K chars ≈ ~25K tokens)
     var maxChars = 400000;
@@ -200,7 +203,7 @@
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 8192,
+        max_tokens: 16384,
         messages: [
           {
             role: "user",
@@ -227,8 +230,30 @@
       .then(function (data) {
         var content = data.content[0].text;
         // Remove potential markdown code block wrapping
-        content = content.replace(/^```json?\s*\n?/, "").replace(/\n?```\s*$/, "");
-        return JSON.parse(content);
+        content = content.replace(/^```json?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
+        var parsed = JSON.parse(content);
+
+        // Validate required sections exist
+        if (!parsed.summary || !parsed.summary.chapters || !Array.isArray(parsed.summary.chapters)) {
+          throw new Error("Le résumé n'a pas été généré correctement.");
+        }
+        if (!parsed.glossary || !Array.isArray(parsed.glossary) || parsed.glossary.length === 0) {
+          throw new Error("Le glossaire n'a pas été généré.");
+        }
+        if (!parsed.flashcards || !Array.isArray(parsed.flashcards) || parsed.flashcards.length === 0) {
+          throw new Error("Les flashcards n'ont pas été générées. Réessayez.");
+        }
+        if (!parsed.quiz || !Array.isArray(parsed.quiz) || parsed.quiz.length === 0) {
+          throw new Error("Le QCM n'a pas été généré. Réessayez.");
+        }
+
+        console.log("SmartReviz — Données générées :",
+          parsed.summary.chapters.length, "chapitres,",
+          parsed.glossary.length, "termes,",
+          parsed.flashcards.length, "flashcards,",
+          parsed.quiz.length, "questions QCM");
+
+        return parsed;
       });
   }
 
@@ -373,15 +398,17 @@
         return loadScormTemplate();
       })
       .then(function () {
-        showProgress(35, "Appel API Claude — génération du contenu...");
+        // Animate progress from 35% to 80% over ~30s during API call
+        startAnimatedProgress(35, 80, 30000, "Appel API Claude — génération du contenu pédagogique...");
         return callClaudeAPI(apiKey, extractedText, lang);
       })
       .then(function (moduleData) {
+        stopAnimatedProgress();
         // Ensure title and language
         moduleData.title = title;
         moduleData.language = lang;
 
-        showProgress(75, "Construction du package SCORM...");
+        showProgress(85, "Construction du package SCORM...");
         generatedModuleHTML = buildPreviewHTML(moduleData);
 
         return buildScormPackage(moduleData, title);
@@ -397,6 +424,7 @@
         }, 500);
       })
       .catch(function (err) {
+        stopAnimatedProgress();
         progressPanel.classList.remove("active");
         showError(err.message || "Une erreur est survenue.");
         btnGenerate.disabled = false;
@@ -426,11 +454,41 @@
     win.document.close();
   });
 
+  // --- Animated Progress During API Call ---
+  var progressInterval = null;
+
+  function startAnimatedProgress(fromPercent, toPercent, durationMs, statusText) {
+    showProgress(fromPercent, statusText);
+    var startTime = Date.now();
+    progressInterval = setInterval(function () {
+      var elapsed = Date.now() - startTime;
+      var ratio = Math.min(elapsed / durationMs, 1);
+      // Ease-out curve for natural feel
+      var eased = 1 - Math.pow(1 - ratio, 3);
+      var current = Math.round(fromPercent + (toPercent - fromPercent) * eased);
+      showProgress(current, statusText);
+      if (ratio >= 1) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+    }, 200);
+  }
+
+  function stopAnimatedProgress() {
+    if (progressInterval) {
+      clearInterval(progressInterval);
+      progressInterval = null;
+    }
+  }
+
   // --- UI Helpers ---
+  var progressPercentEl = document.getElementById("progressPercent");
+
   function showProgress(percent, status) {
     progressPanel.classList.add("active");
     progressFill.style.width = percent + "%";
     progressStatus.textContent = status;
+    progressPercentEl.textContent = percent + "%";
   }
 
   function showError(msg) {

@@ -269,9 +269,21 @@ input:focus, select:focus {
   width: 0%;
 }
 
+.progress-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .progress-status {
   font-size: 14px;
   color: #6c757d;
+}
+
+.progress-percent {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--secondary);
 }
 
 /* ---- Result Panel ---- */
