@@ -747,6 +747,7 @@
 
         document.querySelectorAll(".quiz-choice").forEach(function(c) {
           var idx = parseInt(c.dataset.index);
+          c.classList.remove("selected");
           c.style.cursor = "default";
           if (idx === q.correct) {
             c.classList.add("correct");
