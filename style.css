@@ -319,7 +319,7 @@ input:focus, select:focus {
   flex-wrap: wrap;
 }
 
-.btn-download, .btn-preview {
+.btn-download, .btn-download-html, .btn-preview {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -339,6 +339,15 @@ input:focus, select:focus {
 
 .btn-download:hover {
   background: var(--secondary);
+}
+
+.btn-download-html {
+  background: var(--secondary);
+  color: #fff;
+}
+
+.btn-download-html:hover {
+  background: var(--primary);
 }
 
 .btn-preview {

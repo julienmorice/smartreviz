@@ -37,6 +37,7 @@
   var errorMessage = document.getElementById("errorMessage");
   var resultPanel = document.getElementById("resultPanel");
   var btnDownload = document.getElementById("btnDownload");
+  var btnDownloadHTML = document.getElementById("btnDownloadHTML");
   var btnPreview = document.getElementById("btnPreview");
 
   // --- State ---
@@ -452,6 +453,21 @@
     var a = document.createElement("a");
     a.href = URL.createObjectURL(generatedZipBlob);
     a.download = safeName + "_SCORM.zip";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // --- Download HTML ---
+  btnDownloadHTML.addEventListener("click", function () {
+    if (!generatedModuleHTML) return;
+    var title = moduleTitleInput.value.trim() || "module_revision";
+    var safeName = title.replace(/[^a-zA-Z0-9àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ\s_-]/g, "")
+      .replace(/\s+/g, "_")
+      .substring(0, 50);
+    var blob = new Blob([generatedModuleHTML], { type: "text/html;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = safeName + ".html";
     a.click();
     URL.revokeObjectURL(a.href);
   });
