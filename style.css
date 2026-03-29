@@ -53,8 +53,7 @@ body {
   height: 64px;
   width: auto;
   margin-bottom: 20px;
-  filter: brightness(0) invert(1);
-  opacity: 0.92;
+  mix-blend-mode: screen;
 }
 
 .hero-title {
