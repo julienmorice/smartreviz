@@ -7,18 +7,8 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = "lib/pdf.worker.min.js";
   }
 
-  // --- Embedded API Key (obfuscated) ---
-  var _k = [
-    "c2stYW50LWFwaTAzLUpPOUJkMktR",
-    "Z2l3T3ZtbmNmYUxyZ0xuUjRELTFt",
-    "Wkx1cGlNWVNETHVObF8td201Y0ts",
-    "V29EeEVtZlN5RVJ3Qm5SVDhIQ0RJ",
-    "S3gwaUE4Y0V2U3Z1T1lRLUpRdGFE",
-    "UUFB"
-  ];
-  function _dk() {
-    return atob(_k.join(""));
-  }
+  // --- Proxy Cloudflare Worker ---
+  var PROXY_URL = "https://smartreviz-proxy.julienmorice.workers.dev";
 
   // --- DOM Elements ---
   var dropzone = document.getElementById("dropzone");
@@ -173,8 +163,8 @@
     });
   }
 
-  // --- Claude API Call ---
-  function callClaudeAPI(apiKey, text, language) {
+  // --- Claude API Call (via proxy Cloudflare Worker) ---
+  function callClaudeAPI(text, language) {
     var langLabel = language === "fr" ? "Français" : "English";
 
     var systemPrompt =
@@ -209,13 +199,10 @@
       text = text.substring(0, maxChars);
     }
 
-    return fetch("https://api.anthropic.com/v1/messages", {
+    return fetch(PROXY_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true",
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
@@ -372,9 +359,6 @@
     hideError();
     resultPanel.classList.remove("active");
 
-    // Use embedded API key
-    var apiKey = _dk();
-
     var hasText = textInput.value.trim().length > 0;
     if (!selectedFile && !hasText) {
       showError(
@@ -412,7 +396,7 @@
       .then(function () {
         // Animate progress from 35% to 80% over ~30s during API call
         startAnimatedProgress(35, 80, 30000, "Appel API Claude — génération du contenu pédagogique...");
-        return callClaudeAPI(apiKey, extractedText, lang);
+        return callClaudeAPI(extractedText, lang);
       })
       .then(function (moduleData) {
         stopAnimatedProgress();
