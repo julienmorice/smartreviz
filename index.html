@@ -8,96 +8,234 @@
 </head>
 <body>
 
-  <header class="header">
-    <h1>IMT-BS SmartReviz</h1>
-    <p>Générateur de modules de révision que vous pouvez intégrer ensuite à Moodle en SCORM pour suivre l'activité des apprenants et gérer la progression, ou utiliser directement au format HTML pour un auto-apprentissage sans suivi.</p>
+  <!-- HERO HEADER -->
+  <header class="hero">
+    <div class="hero-inner">
+      <img src="img/logo-imt-bs.png" alt="Logo IMT Business School" class="hero-logo">
+      <h1 class="hero-title">SmartReviz</h1>
+      <p class="hero-subtitle">Transformez vos supports de cours en modules de révision interactifs — intégrables à Moodle en SCORM ou téléchargeables en HTML autonome.</p>
+      <div class="hero-badges">
+        <span class="badge">&#127891; Compatible Moodle</span>
+        <span class="badge">&#128196; Export HTML</span>
+        <span class="badge">&#129302; Généré par IA</span>
+      </div>
+    </div>
   </header>
+
+  <!-- WHAT IT GENERATES -->
+  <section class="features-strip">
+    <div class="features-inner">
+      <div class="feature-item">
+        <div class="feature-icon">&#128209;</div>
+        <div class="feature-label">Résumé</div>
+      </div>
+      <div class="feature-sep">&#8250;</div>
+      <div class="feature-item">
+        <div class="feature-icon">&#128218;</div>
+        <div class="feature-label">Glossaire</div>
+      </div>
+      <div class="feature-sep">&#8250;</div>
+      <div class="feature-item">
+        <div class="feature-icon">&#127919;</div>
+        <div class="feature-label">Matching</div>
+      </div>
+      <div class="feature-sep">&#8250;</div>
+      <div class="feature-item">
+        <div class="feature-icon">&#127183;</div>
+        <div class="feature-label">Flashcards</div>
+      </div>
+      <div class="feature-sep">&#8250;</div>
+      <div class="feature-item">
+        <div class="feature-icon">&#9989;</div>
+        <div class="feature-label">QCM</div>
+      </div>
+    </div>
+  </section>
 
   <main class="container">
 
-    <!-- Step 1: Document Upload -->
-    <div class="step">
-      <div class="step-title">
-        <span class="step-num">1</span>
-        Votre document de cours
-      </div>
-      <div class="dropzone" id="dropzone">
-        <div class="dz-icon">&#128196;</div>
-        <div class="dz-text" id="dzText">Glissez votre fichier ici ou cliquez</div>
-        <div class="dz-formats">.txt .md .docx .pdf</div>
-        <input type="file" id="fileInput" accept=".txt,.md,.docx,.pdf">
-      </div>
-      <div class="text-toggle">
-        <button id="toggleTextInput">ou coller du texte directement</button>
-      </div>
-      <div class="text-input-area" id="textInputArea">
-        <textarea id="textInput" placeholder="Collez le contenu de votre cours ici..."></textarea>
-      </div>
-    </div>
+    <!-- FORM CARD -->
+    <div class="card">
 
-    <!-- Step 2: Options -->
-    <div class="step">
-      <div class="step-title">
-        <span class="step-num">2</span>
-        Options
+      <!-- Step 1: Document Upload -->
+      <div class="step">
+        <div class="step-title">
+          <span class="step-num">1</span>
+          Votre document de cours
+        </div>
+        <div class="dropzone" id="dropzone">
+          <div class="dz-icon">&#128196;</div>
+          <div class="dz-text" id="dzText">Glissez votre fichier ici ou cliquez</div>
+          <div class="dz-formats">.txt &nbsp;·&nbsp; .md &nbsp;·&nbsp; .docx &nbsp;·&nbsp; .pdf</div>
+          <input type="file" id="fileInput" accept=".txt,.md,.docx,.pdf">
+        </div>
+        <div class="text-toggle">
+          <button id="toggleTextInput">ou coller du texte directement</button>
+        </div>
+        <div class="text-input-area" id="textInputArea">
+          <textarea id="textInput" placeholder="Collez le contenu de votre cours ici..."></textarea>
+        </div>
       </div>
-      <div class="form-row">
-        <label for="moduleTitle">Titre du module</label>
-        <input type="text" id="moduleTitle" placeholder="Ex : Éthique de l'IA en santé">
-      </div>
-      <div class="form-row">
-        <label for="moduleLang">Langue du module</label>
-        <select id="moduleLang">
-          <option value="fr">Français</option>
-          <option value="en">Anglais</option>
-        </select>
-      </div>
-    </div>
 
-    <!-- Generate Button -->
-    <div class="generate-container">
-      <button class="btn-generate" id="btnGenerate">Générer le module SCORM</button>
-    </div>
+      <div class="step-divider"></div>
+
+      <!-- Step 2: Options -->
+      <div class="step">
+        <div class="step-title">
+          <span class="step-num">2</span>
+          Options
+        </div>
+        <div class="form-row">
+          <label for="moduleTitle">Titre du module</label>
+          <input type="text" id="moduleTitle" placeholder="Ex : Éthique de l'IA en santé">
+        </div>
+        <div class="form-row">
+          <label for="moduleLang">Langue du module</label>
+          <select id="moduleLang">
+            <option value="fr">&#127467;&#127479; Français</option>
+            <option value="en">&#127468;&#127463; Anglais</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Generate Button -->
+      <div class="generate-container">
+        <button class="btn-generate" id="btnGenerate">
+          <span class="btn-generate-icon">&#10024;</span>
+          Générer le module
+        </button>
+      </div>
+
+    </div><!-- end .card -->
 
     <!-- Progress -->
     <div class="progress-panel" id="progressPanel">
-      <h3 id="progressTitle">Génération en cours...</h3>
+      <h3 id="progressTitle">Génération en cours…</h3>
       <div class="progress-bar-track">
         <div class="progress-bar-fill" id="progressFill"></div>
       </div>
       <div class="progress-details">
-        <p class="progress-status" id="progressStatus">Initialisation...</p>
+        <p class="progress-status" id="progressStatus">Initialisation…</p>
         <p class="progress-percent" id="progressPercent">0%</p>
       </div>
     </div>
 
     <!-- Error -->
     <div class="error-panel" id="errorPanel">
-      <strong>Erreur</strong>
+      <strong>&#9888; Erreur</strong>
       <span id="errorMessage"></span>
     </div>
 
     <!-- Result -->
     <div class="result-panel" id="resultPanel">
-      <div class="result-icon">&#9989;</div>
+      <div class="result-check">&#10003;</div>
       <h3>Module prêt !</h3>
+      <p class="result-hint">Choisissez votre format de téléchargement</p>
       <div class="result-buttons">
-        <button class="btn-download" id="btnDownload">Télécharger le SCORM (.zip)</button>
-        <button class="btn-download-html" id="btnDownloadHTML">Télécharger en HTML (.html)</button>
-        <button class="btn-preview" id="btnPreview">Prévisualiser le module</button>
+        <button class="btn-download" id="btnDownload">
+          <span>&#128230;</span> SCORM pour Moodle
+        </button>
+        <button class="btn-download-html" id="btnDownloadHTML">
+          <span>&#127758;</span> HTML autonome
+        </button>
+        <button class="btn-preview" id="btnPreview">
+          <span>&#128065;</span> Prévisualiser
+        </button>
       </div>
     </div>
 
   </main>
 
+  <!-- CAROUSEL SHOWCASE -->
+  <section class="showcase">
+    <div class="showcase-inner">
+      <h2 class="showcase-title">Aperçu du module généré</h2>
+      <p class="showcase-subtitle">5 activités interactives créées automatiquement à partir de votre cours</p>
+
+      <div class="carousel" id="carousel">
+        <div class="carousel-track" id="carouselTrack">
+          <div class="carousel-slide">
+            <div class="slide-label">01 — Résumé</div>
+            <img src="img/1_resume.png" alt="Résumé du cours">
+          </div>
+          <div class="carousel-slide">
+            <div class="slide-label">02 — Glossaire</div>
+            <img src="img/2_glossaire.png" alt="Glossaire interactif">
+          </div>
+          <div class="carousel-slide">
+            <div class="slide-label">03 — Matching</div>
+            <img src="img/3_matching.png" alt="Activité de matching">
+          </div>
+          <div class="carousel-slide">
+            <div class="slide-label">04 — Flashcards</div>
+            <img src="img/4_flashCard.png" alt="Flashcards">
+          </div>
+          <div class="carousel-slide">
+            <div class="slide-label">05 — QCM</div>
+            <img src="img/5_qcm.png" alt="Questionnaire à choix multiples">
+          </div>
+        </div>
+
+        <button class="carousel-btn prev" id="carouselPrev" aria-label="Précédent">&#8249;</button>
+        <button class="carousel-btn next" id="carouselNext" aria-label="Suivant">&#8250;</button>
+      </div>
+
+      <div class="carousel-dots" id="carouselDots">
+        <span class="dot active" data-index="0"></span>
+        <span class="dot" data-index="1"></span>
+        <span class="dot" data-index="2"></span>
+        <span class="dot" data-index="3"></span>
+        <span class="dot" data-index="4"></span>
+      </div>
+    </div>
+  </section>
+
   <footer class="footer">
-    IMT-BS SmartReviz &mdash; Auteur : Julien MORICE (julien.morice@imt-bs.eu) &mdash; PracTice IMT-BS
+    <span>IMT-BS SmartReviz</span>
+    <span class="footer-sep">·</span>
+    <span>Auteur : Julien MORICE</span>
+    <span class="footer-sep">·</span>
+    <a href="mailto:julien.morice@imt-bs.eu">julien.morice@imt-bs.eu</a>
+    <span class="footer-sep">·</span>
+    <span>PracTice IMT-BS</span>
   </footer>
 
   <script src="lib/jszip.min.js"></script>
   <script src="lib/mammoth.browser.min.js"></script>
   <script src="lib/pdf.min.js"></script>
   <script src="lib/marked.min.js"></script>
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
+  <script>
+    // Carousel
+    const track = document.getElementById('carouselTrack');
+    const dots = document.querySelectorAll('.dot');
+    let current = 0;
+    const total = 5;
+
+    function goTo(index) {
+      current = (index + total) % total;
+      track.style.transform = `translateX(-${current * 100}%)`;
+      dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    }
+
+    document.getElementById('carouselPrev').addEventListener('click', () => goTo(current - 1));
+    document.getElementById('carouselNext').addEventListener('click', () => goTo(current + 1));
+    dots.forEach(d => d.addEventListener('click', () => goTo(+d.dataset.index)));
+
+    // Auto-advance
+    let timer = setInterval(() => goTo(current + 1), 4000);
+    document.getElementById('carousel').addEventListener('mouseenter', () => clearInterval(timer));
+    document.getElementById('carousel').addEventListener('mouseleave', () => {
+      timer = setInterval(() => goTo(current + 1), 4000);
+    });
+
+    // Touch swipe support
+    let touchStartX = 0;
+    track.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    track.addEventListener('touchend', e => {
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 40) goTo(diff > 0 ? current + 1 : current - 1);
+    });
+  </script>
 </body>
 </html>
