@@ -160,7 +160,9 @@
         concept: "Concept",
         question: "Question",
         card: "Carte",
-        checkMatching: "Vérifier"
+        checkMatching: "Vérifier",
+        matchingAutoComplete: "Compléter",
+        matchingHint: "Astuce : après 3 erreurs sur une définition, vous pourrez demander la réponse."
       },
       en: {
         summary: "Summary", glossary: "Glossary", matching: "Matching", flashcards: "Flashcards", quiz: "Quiz",
@@ -193,7 +195,9 @@
         concept: "Concept",
         question: "Question",
         card: "Card",
-        checkMatching: "Check"
+        checkMatching: "Check",
+        matchingAutoComplete: "Reveal",
+        matchingHint: "Tip: after 3 wrong attempts on a definition, you can ask for the answer."
       }
     };
 
@@ -293,12 +297,20 @@
     // --- Matching Game (Drag & Drop) ---
     var matchingItems = [];
     var matchingCompleted = false;
+    var slotAttempts = {};  // Track failed attempts per slot (keyed by expected term)
+    var MAX_ATTEMPTS = 3;
 
     function initMatching() {
       var glossary = data.glossary || [];
       // Pick up to 8 items, shuffled
       var shuffled = glossary.slice().sort(function() { return Math.random() - 0.5; });
       matchingItems = shuffled.slice(0, Math.min(8, shuffled.length));
+
+      // Reset attempt counters
+      slotAttempts = {};
+      matchingItems.forEach(function(item) {
+        slotAttempts[item.term] = 0;
+      });
 
       var termsContainer = document.getElementById("matchingTerms");
       var slotsContainer = document.getElementById("matchingSlots");
@@ -314,7 +326,7 @@
       termsHTML += '</div>';
       termsContainer.innerHTML = termsHTML;
 
-      // Render definition slots
+      // Render definition slots with attempt indicator
       var slotsHTML = '';
       matchingItems.forEach(function(item, i) {
         slotsHTML += '<div class="match-slot" data-expected="' + escapeAttr(item.term) + '">';
@@ -322,6 +334,9 @@
         slotsHTML += '<span class="slot-placeholder">?</span>';
         slotsHTML += '</div>';
         slotsHTML += '<div class="slot-definition">' + escapeHTML(item.definition) + '</div>';
+        slotsHTML += '<div class="slot-attempts" data-for="' + escapeAttr(item.term) + '">';
+        slotsHTML += '<span class="attempt-dot"></span><span class="attempt-dot"></span><span class="attempt-dot"></span>';
+        slotsHTML += '</div>';
         slotsHTML += '</div>';
       });
       slotsHTML += '<div class="btn-container"><button class="btn btn-accent" id="btnCheckMatching">' + L.checkMatching + '</button></div>';
@@ -332,6 +347,101 @@
       document.getElementById("btnToFlashcards").disabled = true;
 
       setupDragAndDrop();
+    }
+
+    // Auto-place the correct term for a given slot (after 3 failed attempts)
+    function autoPlaceTerm(expected) {
+      var slot = document.querySelector('.match-slot[data-expected="' + CSS.escape(expected) + '"]');
+      if (!slot) return;
+      var dropzone = slot.querySelector(".slot-dropzone");
+
+      // Find the correct term in the pool or in another slot
+      var correctTerm = null;
+      var allTerms = document.querySelectorAll('.match-term[data-term="' + CSS.escape(expected) + '"]');
+      allTerms.forEach(function(t) {
+        correctTerm = t;
+      });
+      if (!correctTerm) return;
+
+      // If the term is in another dropzone, return it to pool first
+      var parentDropzone = correctTerm.closest(".slot-dropzone");
+      if (parentDropzone && parentDropzone !== dropzone) {
+        var ph = parentDropzone.querySelector(".slot-placeholder");
+        if (ph) ph.style.display = "";
+        document.getElementById("termsPool").appendChild(correctTerm);
+      }
+
+      // If the dropzone already has a wrong term, send it back
+      var existing = dropzone.querySelector(".match-term");
+      if (existing && existing !== correctTerm) {
+        document.getElementById("termsPool").appendChild(existing);
+      }
+
+      // Animate the term flying to the slot
+      var placeholder = dropzone.querySelector(".slot-placeholder");
+      if (placeholder) placeholder.style.display = "none";
+
+      correctTerm.classList.add("auto-placing");
+      dropzone.appendChild(correctTerm);
+
+      // Mark as correct after animation
+      setTimeout(function() {
+        correctTerm.classList.remove("auto-placing");
+        dropzone.classList.add("match-correct", "match-auto-completed");
+        correctTerm.setAttribute("draggable", "false");
+        correctTerm.classList.add("auto-placed");
+
+        // Remove the "Compléter" button if present
+        var autoBtn = slot.querySelector(".btn-auto-complete");
+        if (autoBtn) autoBtn.remove();
+
+        // Check if all are now matched
+        checkAllMatched();
+      }, 600);
+    }
+
+    // Show "Compléter" button for a slot after 3 failures
+    function showAutoCompleteButton(expected) {
+      var slot = document.querySelector('.match-slot[data-expected="' + CSS.escape(expected) + '"]');
+      if (!slot || slot.querySelector(".btn-auto-complete")) return;
+
+      var btn = document.createElement("button");
+      btn.className = "btn btn-auto-complete";
+      btn.textContent = L.matchingAutoComplete || "Compléter";
+      btn.addEventListener("click", function() {
+        autoPlaceTerm(expected);
+      });
+      slot.appendChild(btn);
+    }
+
+    // Update the attempt dots visual for a slot
+    function updateAttemptDots(expected) {
+      var dotsContainer = document.querySelector('.slot-attempts[data-for="' + CSS.escape(expected) + '"]');
+      if (!dotsContainer) return;
+      var dots = dotsContainer.querySelectorAll(".attempt-dot");
+      var attempts = slotAttempts[expected] || 0;
+      dots.forEach(function(dot, i) {
+        dot.classList.remove("used");
+        if (i < attempts) dot.classList.add("used");
+      });
+    }
+
+    // Check if all terms are correctly matched
+    function checkAllMatched() {
+      var slots = document.querySelectorAll(".match-slot");
+      var allCorrect = true;
+      slots.forEach(function(slot) {
+        var dropzone = slot.querySelector(".slot-dropzone");
+        if (!dropzone.classList.contains("match-correct")) allCorrect = false;
+      });
+      if (allCorrect) {
+        matchingCompleted = true;
+        document.getElementById("btnToFlashcards").disabled = false;
+        document.getElementById("btnCheckMatching").style.display = "none";
+        var fb = document.getElementById("matchingFeedback");
+        fb.innerHTML = '<strong>' + matchingItems.length + '/' + matchingItems.length + '</strong> ' + L.matchingScore;
+        fb.className = "matching-feedback all-correct";
+      }
     }
 
     function setupDragAndDrop() {
@@ -370,6 +480,8 @@
       document.getElementById("matchingSlots").addEventListener("drop", function(e) {
         var dropzone = e.target.closest(".slot-dropzone");
         if (!dropzone || !draggedEl) return;
+        // Block drops on already-correct slots
+        if (dropzone.classList.contains("match-correct")) return;
         e.preventDefault();
         dropzone.classList.remove("dragover");
 
@@ -426,7 +538,7 @@
         var el = document.elementFromPoint(touch.clientX, touch.clientY);
         var dropzone = el ? el.closest(".slot-dropzone") : null;
 
-        if (dropzone) {
+        if (dropzone && !dropzone.classList.contains("match-correct")) {
           var existing = dropzone.querySelector(".match-term");
           if (existing) {
             document.getElementById("termsPool").appendChild(existing);
@@ -460,7 +572,7 @@
           return;
         }
 
-        if (dropzone && selectedTerm) {
+        if (dropzone && selectedTerm && !dropzone.classList.contains("match-correct")) {
           // Clicking a slot while a term is selected: place it
           var existing = dropzone.querySelector(".match-term");
           if (existing) {
@@ -490,33 +602,67 @@
         var dropzone = slot.querySelector(".slot-dropzone");
         var placedTerm = dropzone.querySelector(".match-term");
 
-        // Reset previous states
-        dropzone.classList.remove("match-correct", "match-incorrect");
+        // Skip already correctly matched or auto-completed slots
+        if (dropzone.classList.contains("match-correct")) {
+          correct++;
+          return;
+        }
+
+        // Reset previous incorrect state
+        dropzone.classList.remove("match-incorrect");
 
         if (placedTerm && placedTerm.dataset.term === expected) {
+          // Correct match!
           dropzone.classList.add("match-correct");
           placedTerm.setAttribute("draggable", "false");
           correct++;
+          // Hide attempt dots for this slot
+          var dotsContainer = slot.querySelector(".slot-attempts");
+          if (dotsContainer) dotsContainer.style.display = "none";
         } else if (placedTerm) {
+          // Wrong match — increment attempt counter for this slot
+          slotAttempts[expected] = (slotAttempts[expected] || 0) + 1;
+          updateAttemptDots(expected);
+
           dropzone.classList.add("match-incorrect");
-          // Send incorrect term back to pool after a short delay
-          setTimeout(function() {
-            dropzone.classList.remove("match-incorrect");
-            var placeholder = dropzone.querySelector(".slot-placeholder");
-            if (placeholder) placeholder.style.display = "";
-            document.getElementById("termsPool").appendChild(placedTerm);
-          }, 1200);
+
+          // Send incorrect term back to pool after animation
+          (function(dz, pt, exp) {
+            setTimeout(function() {
+              dz.classList.remove("match-incorrect");
+              var placeholder = dz.querySelector(".slot-placeholder");
+              if (placeholder) placeholder.style.display = "";
+              document.getElementById("termsPool").appendChild(pt);
+
+              // After 3 failed attempts, show the "Compléter" button
+              if (slotAttempts[exp] >= MAX_ATTEMPTS) {
+                showAutoCompleteButton(exp);
+              }
+            }, 1200);
+          })(dropzone, placedTerm, expected);
         }
       });
 
       var fb = document.getElementById("matchingFeedback");
-      fb.innerHTML = '<strong>' + correct + '/' + total + '</strong> ' + L.matchingScore;
-      fb.className = "matching-feedback " + (correct === total ? "all-correct" : "partial");
-
       if (correct === total) {
+        fb.innerHTML = '<strong>' + correct + '/' + total + '</strong> ' + L.matchingScore;
+        fb.className = "matching-feedback all-correct";
         matchingCompleted = true;
         document.getElementById("btnToFlashcards").disabled = false;
         document.getElementById("btnCheckMatching").style.display = "none";
+      } else {
+        // Show feedback with hint about auto-complete after 3 attempts
+        var fbText = '<strong>' + correct + '/' + total + '</strong> ' + L.matchingScore;
+        var slotsWithMaxAttempts = 0;
+        Object.keys(slotAttempts).forEach(function(key) {
+          if (slotAttempts[key] >= MAX_ATTEMPTS) slotsWithMaxAttempts++;
+        });
+        if (slotsWithMaxAttempts === 0) {
+          // Show hint that auto-complete exists
+          fbText += '<br><span class="matching-hint">' + (L.matchingHint || "Astuce : après 3 erreurs sur une définition, vous pourrez demander la réponse.") + '</span>';
+        }
+        fb.innerHTML = fbText;
+        fb.className = "matching-feedback partial";
       }
     }
 

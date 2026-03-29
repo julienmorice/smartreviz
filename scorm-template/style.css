@@ -371,13 +371,109 @@ body {
   border: 1px solid var(--accent);
 }
 
+/* ---- Matching: Attempt Dots (3 tries indicator) ---- */
+.slot-attempts {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 6px;
+  flex-shrink: 0;
+}
+
+.attempt-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #dee2e6;
+  border: 1.5px solid #adb5bd;
+  transition: all 0.3s ease;
+}
+
+.attempt-dot.used {
+  background: var(--error);
+  border-color: var(--error);
+  box-shadow: 0 0 4px rgba(220, 53, 69, 0.4);
+}
+
+/* ---- Matching: Auto-Complete Button ---- */
+.btn-auto-complete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  background: var(--secondary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  animation: fadeInBounce 0.4s ease;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.btn-auto-complete:hover {
+  background: var(--primary);
+  transform: scale(1.05);
+}
+
+@keyframes fadeInBounce {
+  0% { opacity: 0; transform: scale(0.8); }
+  60% { opacity: 1; transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* ---- Matching: Auto-Placement Animation ---- */
+.match-term.auto-placing {
+  animation: autoPlace 0.6s ease;
+  pointer-events: none;
+}
+
+@keyframes autoPlace {
+  0% { opacity: 0.5; transform: scale(0.8); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.match-term.auto-placed {
+  background: var(--secondary);
+  opacity: 0.85;
+  cursor: default;
+}
+
+.slot-dropzone.match-auto-completed {
+  border-color: var(--secondary);
+  background: #e3f2fd;
+  border-style: solid;
+}
+
+/* ---- Matching: Hint text ---- */
+.matching-hint {
+  display: block;
+  font-size: 13px;
+  color: #6c757d;
+  margin-top: 6px;
+  font-style: italic;
+}
+
 @media (max-width: 600px) {
   .match-slot {
     flex-direction: column;
+    align-items: stretch;
   }
   .slot-dropzone {
     min-width: 100%;
     max-width: 100%;
+  }
+  .slot-attempts {
+    justify-content: center;
+  }
+  .btn-auto-complete {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 6px;
   }
 }
 
