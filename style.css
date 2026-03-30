@@ -865,6 +865,43 @@ input:focus, select:focus {
 }
 
 /* ============================================================
+   VIDEO SECTION
+   ============================================================ */
+.video-section {
+  background: #fff;
+  padding: 56px 24px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.video-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.video-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.video-subtitle {
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 28px;
+}
+
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,61,106,0.14);
+}
+
+/* ============================================================
    SHOWCASE / CAROUSEL
    ============================================================ */
 .showcase {
