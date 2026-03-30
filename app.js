@@ -35,9 +35,16 @@
   var selectedFile = null;
   var generatedZipBlob = null;
   var generatedModuleHTML = "";
+  var pendingModuleData = null;
+  var pendingTitle = "";
+  var pendingLang = "";
 
   // --- SCORM Template Cache ---
   var scormTemplateCache = {};
+
+  // --- Editor DOM refs ---
+  var editorPanel = document.getElementById("editorPanel");
+  var btnValidateGenerate = document.getElementById("btnValidateGenerate");
 
   // --- Dropzone ---
   dropzone.addEventListener("click", function () {
@@ -400,24 +407,15 @@
       })
       .then(function (moduleData) {
         stopAnimatedProgress();
-        // Ensure title and language
         moduleData.title = title;
         moduleData.language = lang;
+        pendingModuleData = moduleData;
+        pendingTitle = title;
+        pendingLang = lang;
 
-        showProgress(85, "Construction du package SCORM...");
-        generatedModuleHTML = buildPreviewHTML(moduleData);
-
-        return buildScormPackage(moduleData, title);
-      })
-      .then(function (blob) {
-        generatedZipBlob = blob;
-        showProgress(100, "Terminé !");
-
-        setTimeout(function () {
-          progressPanel.classList.remove("active");
-          resultPanel.classList.add("active");
-          btnGenerate.disabled = false;
-        }, 500);
+        progressPanel.classList.remove("active");
+        showEditor(moduleData);
+        btnGenerate.disabled = false;
       })
       .catch(function (err) {
         stopAnimatedProgress();
@@ -464,6 +462,415 @@
     win.document.write(generatedModuleHTML);
     win.document.close();
   });
+
+  // ============================================================
+  // EDITOR
+  // ============================================================
+
+  function showEditor(data) {
+    editorPanel.classList.add("active");
+    renderTabSummary(data.summary);
+    renderTabGlossary(data.glossary);
+    renderTabFlashcards(data.flashcards);
+    renderTabQuiz(data.quiz);
+    editorPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // --- Tab switching ---
+  document.getElementById("editorTabs").addEventListener("click", function(e) {
+    var btn = e.target.closest(".tab-btn");
+    if (!btn) return;
+    var tab = btn.dataset.tab;
+    document.querySelectorAll(".tab-btn").forEach(function(b) { b.classList.remove("active"); });
+    document.querySelectorAll(".tab-content").forEach(function(c) { c.classList.remove("active"); });
+    btn.classList.add("active");
+    document.getElementById("tab-" + tab).classList.add("active");
+  });
+
+  // --- SUMMARY TAB ---
+  function renderTabSummary(summary) {
+    var el = document.getElementById("tab-summary");
+    var html = "";
+
+    // Overview
+    html += '<div class="editor-section-label">Vue d\'ensemble</div>';
+    html += '<textarea id="ed-overview" rows="4">' + esc(summary.overview || "") + '</textarea>';
+
+    // Key points
+    html += '<div class="editor-section-label">Points clés</div>';
+    html += '<div id="ed-keypoints">';
+    (summary.keyPoints || []).forEach(function(kp, i) {
+      html += keypointRow(kp, i);
+    });
+    html += '</div>';
+    html += '<button class="btn-add-row" id="btnAddKeypoint">+ Ajouter un point clé</button>';
+
+    // Chapters
+    html += '<div class="editor-section-label" style="margin-top:20px">Chapitres</div>';
+    html += '<div id="ed-chapters">';
+    (summary.chapters || []).forEach(function(ch, ci) {
+      html += chapterBlock(ch, ci);
+    });
+    html += '</div>';
+    html += '<button class="btn-add-row" id="btnAddChapter">+ Ajouter un chapitre</button>';
+
+    el.innerHTML = html;
+
+    // Events: key points
+    document.getElementById("btnAddKeypoint").addEventListener("click", function() {
+      var container = document.getElementById("ed-keypoints");
+      var idx = container.querySelectorAll(".keypoint-row").length;
+      var div = document.createElement("div");
+      div.innerHTML = keypointRow("", idx);
+      container.appendChild(div.firstChild);
+      bindDeleteBtns(container);
+    });
+
+    // Events: chapters
+    document.getElementById("btnAddChapter").addEventListener("click", function() {
+      var container = document.getElementById("ed-chapters");
+      var idx = container.querySelectorAll(".chapter-block").length;
+      var div = document.createElement("div");
+      div.innerHTML = chapterBlock({ title: "Nouveau chapitre", sections: [{ title: "", content: "" }] }, idx);
+      container.appendChild(div.firstChild);
+      bindChapterEvents(container.lastElementChild, idx);
+      bindDeleteBtns(container);
+    });
+
+    bindDeleteBtns(document.getElementById("ed-keypoints"));
+    document.querySelectorAll(".chapter-block").forEach(function(block, ci) {
+      bindChapterEvents(block, ci);
+    });
+    bindDeleteBtns(document.getElementById("ed-chapters"));
+  }
+
+  function keypointRow(value, idx) {
+    return '<div class="keypoint-row" data-idx="' + idx + '">' +
+      '<input type="text" class="kp-input" value="' + esc(value) + '" placeholder="Point clé...">' +
+      '<button class="btn-row-delete" title="Supprimer">&#215;</button>' +
+    '</div>';
+  }
+
+  function chapterBlock(ch, ci) {
+    var html = '<div class="chapter-block" data-ci="' + ci + '">';
+    html += '<div class="chapter-block-header">';
+    html += '<input type="text" class="ch-title" value="' + esc(ch.title || "") + '" placeholder="Titre du chapitre">';
+    html += '<button class="btn-row-delete" title="Supprimer le chapitre">&#215;</button>';
+    html += '</div>';
+    html += '<div class="chapter-sections" data-ci="' + ci + '">';
+    (ch.sections || []).forEach(function(sec, si) {
+      html += sectionBlock(sec, ci, si);
+    });
+    html += '</div>';
+    html += '<button class="btn-add-row btn-add-section" style="font-size:12px;padding:5px 10px">+ Section</button>';
+    html += '</div>';
+    return html;
+  }
+
+  function sectionBlock(sec, ci, si) {
+    return '<div class="section-block" data-si="' + si + '">' +
+      '<div class="section-block-fields">' +
+        '<input type="text" class="sec-title" value="' + esc(sec.title || "") + '" placeholder="Titre de la section">' +
+        '<textarea class="sec-content" rows="3">' + esc(sec.content || "") + '</textarea>' +
+      '</div>' +
+      '<button class="btn-row-delete" title="Supprimer la section">&#215;</button>' +
+    '</div>';
+  }
+
+  function bindChapterEvents(block, ci) {
+    var addBtn = block.querySelector(".btn-add-section");
+    if (!addBtn) return;
+    addBtn.addEventListener("click", function() {
+      var secContainer = block.querySelector(".chapter-sections");
+      var si = secContainer.querySelectorAll(".section-block").length;
+      var div = document.createElement("div");
+      div.innerHTML = sectionBlock({ title: "", content: "" }, ci, si);
+      secContainer.appendChild(div.firstChild);
+      bindDeleteBtns(secContainer);
+    });
+    bindDeleteBtns(block.querySelector(".chapter-sections"));
+  }
+
+  function bindDeleteBtns(container) {
+    container.querySelectorAll(".btn-row-delete").forEach(function(btn) {
+      btn.onclick = function() {
+        var row = btn.closest(".keypoint-row, .chapter-block, .section-block, .editor-row, .quiz-editor-item");
+        if (row) row.remove();
+      };
+    });
+  }
+
+  // --- GLOSSARY TAB ---
+  function renderTabGlossary(glossary) {
+    var el = document.getElementById("tab-glossary");
+    document.getElementById("countGlossary").textContent = glossary.length;
+    var html = '<div id="ed-glossary">';
+    glossary.forEach(function(item, i) {
+      html += glossaryRow(item, i);
+    });
+    html += '</div>';
+    html += '<button class="btn-add-row" id="btnAddGloss">+ Ajouter un terme</button>';
+    el.innerHTML = html;
+
+    document.getElementById("btnAddGloss").addEventListener("click", function() {
+      var container = document.getElementById("ed-glossary");
+      var idx = container.querySelectorAll(".editor-row").length;
+      var div = document.createElement("div");
+      div.innerHTML = glossaryRow({ term: "", definition: "" }, idx);
+      container.appendChild(div.firstChild);
+      bindDeleteBtns(container);
+      document.getElementById("countGlossary").textContent = container.querySelectorAll(".editor-row").length;
+    });
+
+    bindDeleteBtns(document.getElementById("ed-glossary"));
+  }
+
+  function glossaryRow(item, i) {
+    return '<div class="editor-row" data-idx="' + i + '">' +
+      '<div class="editor-row-fields">' +
+        '<input type="text" class="gloss-term" value="' + esc(item.term || "") + '" placeholder="Terme">' +
+        '<textarea class="gloss-def" rows="2">' + esc(item.definition || "") + '</textarea>' +
+      '</div>' +
+      '<button class="btn-row-delete" title="Supprimer">&#215;</button>' +
+    '</div>';
+  }
+
+  // --- FLASHCARDS TAB ---
+  function renderTabFlashcards(flashcards) {
+    var el = document.getElementById("tab-flashcards");
+    document.getElementById("countFlashcards").textContent = flashcards.length;
+    var html = '<div id="ed-flashcards">';
+    flashcards.forEach(function(fc, i) {
+      html += flashcardRow(fc, i);
+    });
+    html += '</div>';
+    html += '<button class="btn-add-row" id="btnAddFC">+ Ajouter une flashcard</button>';
+    el.innerHTML = html;
+
+    document.getElementById("btnAddFC").addEventListener("click", function() {
+      var container = document.getElementById("ed-flashcards");
+      var idx = container.querySelectorAll(".editor-row").length;
+      var div = document.createElement("div");
+      div.innerHTML = flashcardRow({ type: "concept", front: "", back: "" }, idx);
+      container.appendChild(div.firstChild);
+      bindDeleteBtns(container);
+      document.getElementById("countFlashcards").textContent = container.querySelectorAll(".editor-row").length;
+    });
+
+    bindDeleteBtns(document.getElementById("ed-flashcards"));
+  }
+
+  function flashcardRow(fc, i) {
+    return '<div class="editor-row" data-idx="' + i + '">' +
+      '<div class="editor-row-fields">' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">' +
+          '<span style="font-size:12px;font-weight:600;color:#6B7280">Type :</span>' +
+          '<select class="fc-type" style="width:auto;padding:4px 8px;font-size:12px">' +
+            '<option value="concept"' + (fc.type === "concept" ? " selected" : "") + '>Concept</option>' +
+            '<option value="question"' + (fc.type === "question" ? " selected" : "") + '>Question</option>' +
+          '</select>' +
+        '</div>' +
+        '<input type="text" class="fc-front" value="' + esc(fc.front || "") + '" placeholder="Recto (question / terme)">' +
+        '<textarea class="fc-back" rows="2">' + esc(fc.back || "") + '</textarea>' +
+      '</div>' +
+      '<button class="btn-row-delete" title="Supprimer">&#215;</button>' +
+    '</div>';
+  }
+
+  // --- QUIZ TAB ---
+  function renderTabQuiz(quiz) {
+    var el = document.getElementById("tab-quiz");
+    document.getElementById("countQuiz").textContent = quiz.length;
+    var html = '<div id="ed-quiz">';
+    quiz.forEach(function(q, i) {
+      html += quizEditorItem(q, i);
+    });
+    html += '</div>';
+    html += '<button class="btn-add-row" id="btnAddQ">+ Ajouter une question</button>';
+    el.innerHTML = html;
+
+    // Accordion
+    el.querySelectorAll(".quiz-editor-header").forEach(function(header) {
+      header.addEventListener("click", function() {
+        var item = header.closest(".quiz-editor-item");
+        item.classList.toggle("open");
+      });
+    });
+
+    // Auto-update preview text on question input
+    el.querySelectorAll(".quiz-q-input").forEach(function(input) {
+      input.addEventListener("input", function() {
+        var item = input.closest(".quiz-editor-item");
+        var preview = item.querySelector(".quiz-editor-preview");
+        preview.textContent = input.value || "Question…";
+      });
+    });
+
+    document.getElementById("btnAddQ").addEventListener("click", function() {
+      var container = document.getElementById("ed-quiz");
+      var idx = container.querySelectorAll(".quiz-editor-item").length;
+      var q = { question: "", choices: ["", "", "", ""], correct: 0, explanation: "" };
+      var div = document.createElement("div");
+      div.innerHTML = quizEditorItem(q, idx);
+      container.appendChild(div.firstChild);
+      var newItem = container.lastElementChild;
+      newItem.querySelector(".quiz-editor-header").addEventListener("click", function() {
+        newItem.classList.toggle("open");
+      });
+      newItem.querySelector(".quiz-q-input").addEventListener("input", function(e) {
+        newItem.querySelector(".quiz-editor-preview").textContent = e.target.value || "Question…";
+      });
+      bindDeleteBtns(container);
+      document.getElementById("countQuiz").textContent = container.querySelectorAll(".quiz-editor-item").length;
+      newItem.classList.add("open");
+    });
+
+    bindDeleteBtns(document.getElementById("ed-quiz"));
+  }
+
+  function quizEditorItem(q, i) {
+    var choices = q.choices || ["", "", "", ""];
+    var letters = ["A", "B", "C", "D"];
+    var html = '<div class="quiz-editor-item" data-idx="' + i + '">';
+    html += '<div class="quiz-editor-header">';
+    html += '<span class="quiz-editor-num">' + (i + 1) + '</span>';
+    html += '<span class="quiz-editor-preview">' + esc(q.question || "Question…") + '</span>';
+    html += '<span class="quiz-editor-toggle">&#9660;</span>';
+    html += '</div>';
+    html += '<div class="quiz-editor-body">';
+    html += '<textarea class="quiz-q-input" rows="2" placeholder="Énoncé de la question" style="margin-top:10px">' + esc(q.question || "") + '</textarea>';
+    html += '<div class="editor-section-label" style="margin-top:12px">Choix de réponses</div>';
+    html += '<div class="quiz-choices-grid">';
+    choices.forEach(function(c, ci) {
+      html += '<div class="quiz-choice-row">';
+      html += '<label>' + letters[ci] + '</label>';
+      html += '<input type="text" class="quiz-c-input" data-ci="' + ci + '" value="' + esc(c) + '" placeholder="Réponse ' + letters[ci] + '">';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '<div class="quiz-correct-row">';
+    html += '<label>Bonne réponse :</label>';
+    html += '<select class="quiz-correct-sel">';
+    letters.forEach(function(l, li) {
+      html += '<option value="' + li + '"' + (q.correct === li ? " selected" : "") + '>' + l + '</option>';
+    });
+    html += '</select>';
+    html += '</div>';
+    html += '<div class="editor-section-label" style="margin-top:10px">Explication</div>';
+    html += '<textarea class="quiz-expl-input" rows="2" placeholder="Explication de la bonne réponse">' + esc(q.explanation || "") + '</textarea>';
+    html += '<div class="quiz-delete-row"><button class="btn-row-delete" style="font-size:13px;padding:4px 8px;border:1px solid #FECACA;border-radius:6px;color:#DC2626;background:#FEF2F2" title="Supprimer la question">&#128465; Supprimer</button></div>';
+    html += '</div>';
+    html += '</div>';
+    return html;
+  }
+
+  // --- Collect editor data ---
+  function collectEditorData() {
+    var data = {};
+
+    // Summary
+    var overview = document.getElementById("ed-overview").value.trim();
+    var keyPoints = [];
+    document.querySelectorAll("#ed-keypoints .kp-input").forEach(function(input) {
+      if (input.value.trim()) keyPoints.push(input.value.trim());
+    });
+    var chapters = [];
+    document.querySelectorAll("#ed-chapters .chapter-block").forEach(function(block) {
+      var chTitle = block.querySelector(".ch-title").value.trim();
+      var sections = [];
+      block.querySelectorAll(".section-block").forEach(function(sec) {
+        sections.push({
+          title: sec.querySelector(".sec-title").value.trim(),
+          content: sec.querySelector(".sec-content").value.trim()
+        });
+      });
+      chapters.push({ title: chTitle, sections: sections });
+    });
+    data.summary = { overview: overview, keyPoints: keyPoints, chapters: chapters };
+
+    // Glossary
+    var glossary = [];
+    document.querySelectorAll("#ed-glossary .editor-row").forEach(function(row) {
+      var term = row.querySelector(".gloss-term").value.trim();
+      var def = row.querySelector(".gloss-def").value.trim();
+      if (term) glossary.push({ term: term, definition: def });
+    });
+    data.glossary = glossary;
+
+    // Flashcards
+    var flashcards = [];
+    document.querySelectorAll("#ed-flashcards .editor-row").forEach(function(row) {
+      var front = row.querySelector(".fc-front").value.trim();
+      var back = row.querySelector(".fc-back").value.trim();
+      var type = row.querySelector(".fc-type").value;
+      if (front) flashcards.push({ type: type, front: front, back: back });
+    });
+    data.flashcards = flashcards;
+
+    // Quiz
+    var quiz = [];
+    document.querySelectorAll("#ed-quiz .quiz-editor-item").forEach(function(item) {
+      var question = item.querySelector(".quiz-q-input").value.trim();
+      var choices = [];
+      item.querySelectorAll(".quiz-c-input").forEach(function(c) {
+        choices.push(c.value.trim());
+      });
+      var correct = parseInt(item.querySelector(".quiz-correct-sel").value);
+      var explanation = item.querySelector(".quiz-expl-input").value.trim();
+      if (question) quiz.push({ question: question, choices: choices, correct: correct, explanation: explanation });
+    });
+    data.quiz = quiz;
+
+    data.title = pendingTitle;
+    data.language = pendingLang;
+
+    return data;
+  }
+
+  // --- Validate & Generate ---
+  btnValidateGenerate.addEventListener("click", function() {
+    var moduleData = collectEditorData();
+
+    if (!moduleData.quiz || moduleData.quiz.length === 0) {
+      alert("Le QCM est vide. Ajoutez au moins une question.");
+      return;
+    }
+    if (!moduleData.flashcards || moduleData.flashcards.length === 0) {
+      alert("Les flashcards sont vides. Ajoutez au moins une carte.");
+      return;
+    }
+
+    editorPanel.classList.remove("active");
+    resultPanel.classList.remove("active");
+    showProgress(60, "Construction du package SCORM...");
+
+    generatedModuleHTML = buildPreviewHTML(moduleData);
+
+    buildScormPackage(moduleData, moduleData.title)
+      .then(function(blob) {
+        generatedZipBlob = blob;
+        showProgress(100, "Terminé !");
+        setTimeout(function() {
+          progressPanel.classList.remove("active");
+          resultPanel.classList.add("active");
+          resultPanel.scrollIntoView({ behavior: "smooth" });
+        }, 400);
+      })
+      .catch(function(err) {
+        progressPanel.classList.remove("active");
+        editorPanel.classList.add("active");
+        showError(err.message || "Erreur lors de la génération.");
+      });
+  });
+
+  // --- Escape helper for editor ---
+  function esc(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
 
   // --- Animated Progress During API Call ---
   var progressInterval = null;

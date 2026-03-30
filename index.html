@@ -108,6 +108,35 @@
 
     </div><!-- end .card -->
 
+    <!-- Editor Panel -->
+    <div class="editor-panel" id="editorPanel">
+      <div class="editor-header">
+        <div class="step-title">
+          <span class="step-num">3</span>
+          Vérifiez et modifiez le contenu généré
+        </div>
+        <p class="editor-subtitle">Corrigez les éventuelles erreurs de l'IA avant de générer votre module.</p>
+      </div>
+
+      <div class="editor-tabs" id="editorTabs">
+        <button class="tab-btn active" data-tab="summary">&#128209; Résumé</button>
+        <button class="tab-btn" data-tab="glossary">&#128218; Glossaire <span class="tab-count" id="countGlossary"></span></button>
+        <button class="tab-btn" data-tab="flashcards">&#127183; Flashcards <span class="tab-count" id="countFlashcards"></span></button>
+        <button class="tab-btn" data-tab="quiz">&#9989; QCM <span class="tab-count" id="countQuiz"></span></button>
+      </div>
+
+      <div class="tab-content active" id="tab-summary"></div>
+      <div class="tab-content" id="tab-glossary"></div>
+      <div class="tab-content" id="tab-flashcards"></div>
+      <div class="tab-content" id="tab-quiz"></div>
+
+      <div class="editor-footer">
+        <button class="btn-validate-generate" id="btnValidateGenerate">
+          &#10024; Valider et générer le module
+        </button>
+      </div>
+    </div>
+
     <!-- Progress -->
     <div class="progress-panel" id="progressPanel">
       <h3 id="progressTitle">Génération en cours…</h3>
