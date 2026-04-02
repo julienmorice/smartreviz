@@ -77,7 +77,7 @@
   function handleFile(file) {
     var ext = file.name.split(".").pop().toLowerCase();
     if (["txt", "md", "docx", "pdf"].indexOf(ext) === -1) {
-      showError("Format non supporté. Utilisez .txt, .md, .docx ou .pdf");
+      showError(SmartRevizI18n.t("errUnsupportedFormat"));
       return;
     }
     selectedFile = file;
@@ -99,7 +99,7 @@
     if (textInputArea.classList.contains("active")) {
       selectedFile = null;
       dropzone.classList.remove("has-file");
-      dzText.textContent = "Glissez votre fichier ici ou cliquez";
+      dzText.textContent = SmartRevizI18n.t("dzText");
       fileInput.value = "";
     }
   });
@@ -115,7 +115,7 @@
           resolve(e.target.result);
         };
         reader.onerror = function () {
-          reject(new Error("Erreur de lecture du fichier"));
+          reject(new Error(SmartRevizI18n.t("errFileRead")));
         };
         reader.readAsText(file);
       } else if (ext === "docx") {
@@ -129,7 +129,7 @@
             .catch(reject);
         };
         reader2.onerror = function () {
-          reject(new Error("Erreur de lecture du fichier DOCX"));
+          reject(new Error(SmartRevizI18n.t("errFileReadDOCX")));
         };
         reader2.readAsArrayBuffer(file);
       } else if (ext === "pdf") {
@@ -161,11 +161,11 @@
           }).catch(reject);
         };
         reader3.onerror = function () {
-          reject(new Error("Erreur de lecture du fichier PDF"));
+          reject(new Error(SmartRevizI18n.t("errFileReadPDF")));
         };
         reader3.readAsArrayBuffer(file);
       } else {
-        reject(new Error("Format non supporté"));
+        reject(new Error(SmartRevizI18n.t("errUnsupportedFormat")));
       }
     });
   }
@@ -231,7 +231,7 @@
             throw new Error(
               err.error
                 ? err.error.message
-                : "Erreur API (" + response.status + ")"
+                : "API Error (" + response.status + ")"
             );
           });
         }
@@ -245,16 +245,16 @@
 
         // Validate required sections exist
         if (!parsed.summary || !parsed.summary.chapters || !Array.isArray(parsed.summary.chapters)) {
-          throw new Error("Le résumé n'a pas été généré correctement.");
+          throw new Error(SmartRevizI18n.t("errSummary"));
         }
         if (!parsed.glossary || !Array.isArray(parsed.glossary) || parsed.glossary.length === 0) {
-          throw new Error("Le glossaire n'a pas été généré.");
+          throw new Error(SmartRevizI18n.t("errGlossary"));
         }
         if (!parsed.flashcards || !Array.isArray(parsed.flashcards) || parsed.flashcards.length === 0) {
-          throw new Error("Les flashcards n'ont pas été générées. Réessayez.");
+          throw new Error(SmartRevizI18n.t("errFlashcards"));
         }
         if (!parsed.quiz || !Array.isArray(parsed.quiz) || parsed.quiz.length === 0) {
-          throw new Error("Le QCM n'a pas été généré. Réessayez.");
+          throw new Error(SmartRevizI18n.t("errQuiz"));
         }
 
         console.log("SmartReviz — Données générées :",
@@ -368,18 +368,16 @@
 
     var hasText = textInput.value.trim().length > 0;
     if (!selectedFile && !hasText) {
-      showError(
-        "Veuillez uploader un fichier ou coller du texte."
-      );
+      showError(SmartRevizI18n.t("errNoInput"));
       return;
     }
 
     var title =
-      moduleTitleInput.value.trim() || "Module de révision";
+      moduleTitleInput.value.trim() || SmartRevizI18n.t("defaultTitle");
     var lang = moduleLangSelect.value;
 
     btnGenerate.disabled = true;
-    showProgress(10, "Extraction du texte...");
+    showProgress(10, SmartRevizI18n.t("progressExtracting"));
 
     // Step 1: Extract text
     var textPromise;
@@ -392,17 +390,15 @@
     textPromise
       .then(function (text) {
         if (!text || text.trim().length < 50) {
-          throw new Error(
-            "Le texte extrait est trop court. Vérifiez votre document."
-          );
+          throw new Error(SmartRevizI18n.t("errTextTooShort"));
         }
         extractedText = text;
-        showProgress(25, "Chargement des templates SCORM...");
+        showProgress(25, SmartRevizI18n.t("progressLoadingTemplates"));
         return loadScormTemplate();
       })
       .then(function () {
         // Animate progress from 35% to 80% over ~30s during API call
-        startAnimatedProgress(35, 80, 30000, "Appel API Claude — génération du contenu pédagogique...");
+        startAnimatedProgress(35, 80, 30000, SmartRevizI18n.t("progressCallingAPI"));
         return callClaudeAPI(extractedText, lang);
       })
       .then(function (moduleData) {
@@ -420,7 +416,7 @@
       .catch(function (err) {
         stopAnimatedProgress();
         progressPanel.classList.remove("active");
-        showError(err.message || "Une erreur est survenue.");
+        showError(err.message || SmartRevizI18n.t("errGeneric"));
         btnGenerate.disabled = false;
       });
   });
@@ -493,26 +489,26 @@
     var html = "";
 
     // Overview
-    html += '<div class="editor-section-label">Vue d\'ensemble</div>';
+    html += '<div class="editor-section-label">' + esc(SmartRevizI18n.t("edOverview")) + '</div>';
     html += '<textarea id="ed-overview" rows="4">' + esc(summary.overview || "") + '</textarea>';
 
     // Key points
-    html += '<div class="editor-section-label">Points clés</div>';
+    html += '<div class="editor-section-label">' + esc(SmartRevizI18n.t("edKeyPoints")) + '</div>';
     html += '<div id="ed-keypoints">';
     (summary.keyPoints || []).forEach(function(kp, i) {
       html += keypointRow(kp, i);
     });
     html += '</div>';
-    html += '<button class="btn-add-row" id="btnAddKeypoint">+ Ajouter un point clé</button>';
+    html += '<button class="btn-add-row" id="btnAddKeypoint">' + esc(SmartRevizI18n.t("addKeypoint")) + '</button>';
 
     // Chapters
-    html += '<div class="editor-section-label" style="margin-top:20px">Chapitres</div>';
+    html += '<div class="editor-section-label" style="margin-top:20px">' + esc(SmartRevizI18n.t("edChapters")) + '</div>';
     html += '<div id="ed-chapters">';
     (summary.chapters || []).forEach(function(ch, ci) {
       html += chapterBlock(ch, ci);
     });
     html += '</div>';
-    html += '<button class="btn-add-row" id="btnAddChapter">+ Ajouter un chapitre</button>';
+    html += '<button class="btn-add-row" id="btnAddChapter">' + esc(SmartRevizI18n.t("addChapter")) + '</button>';
 
     el.innerHTML = html;
 
@@ -531,7 +527,7 @@
       var container = document.getElementById("ed-chapters");
       var idx = container.querySelectorAll(".chapter-block").length;
       var div = document.createElement("div");
-      div.innerHTML = chapterBlock({ title: "Nouveau chapitre", sections: [{ title: "", content: "" }] }, idx);
+      div.innerHTML = chapterBlock({ title: SmartRevizI18n.t("newChapter"), sections: [{ title: "", content: "" }] }, idx);
       container.appendChild(div.firstChild);
       bindChapterEvents(container.lastElementChild, idx);
       bindDeleteBtns(container);
@@ -546,23 +542,23 @@
 
   function keypointRow(value, idx) {
     return '<div class="keypoint-row" data-idx="' + idx + '">' +
-      '<input type="text" class="kp-input" value="' + esc(value) + '" placeholder="Point clé...">' +
-      '<button class="btn-row-delete" title="Supprimer">&#215;</button>' +
+      '<input type="text" class="kp-input" value="' + esc(value) + '" placeholder="' + esc(SmartRevizI18n.t("placeholderKeypoint")) + '">' +
+      '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteTooltip")) + '">&#215;</button>' +
     '</div>';
   }
 
   function chapterBlock(ch, ci) {
     var html = '<div class="chapter-block" data-ci="' + ci + '">';
     html += '<div class="chapter-block-header">';
-    html += '<input type="text" class="ch-title" value="' + esc(ch.title || "") + '" placeholder="Titre du chapitre">';
-    html += '<button class="btn-row-delete" title="Supprimer le chapitre">&#215;</button>';
+    html += '<input type="text" class="ch-title" value="' + esc(ch.title || "") + '" placeholder="' + esc(SmartRevizI18n.t("placeholderChapterTitle")) + '">';
+    html += '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteChapterTooltip")) + '">&#215;</button>';
     html += '</div>';
     html += '<div class="chapter-sections" data-ci="' + ci + '">';
     (ch.sections || []).forEach(function(sec, si) {
       html += sectionBlock(sec, ci, si);
     });
     html += '</div>';
-    html += '<button class="btn-add-row btn-add-section" style="font-size:12px;padding:5px 10px">+ Section</button>';
+    html += '<button class="btn-add-row btn-add-section" style="font-size:12px;padding:5px 10px">' + esc(SmartRevizI18n.t("addSection")) + '</button>';
     html += '</div>';
     return html;
   }
@@ -570,10 +566,10 @@
   function sectionBlock(sec, ci, si) {
     return '<div class="section-block" data-si="' + si + '">' +
       '<div class="section-block-fields">' +
-        '<input type="text" class="sec-title" value="' + esc(sec.title || "") + '" placeholder="Titre de la section">' +
+        '<input type="text" class="sec-title" value="' + esc(sec.title || "") + '" placeholder="' + esc(SmartRevizI18n.t("placeholderSectionTitle")) + '">' +
         '<textarea class="sec-content" rows="3">' + esc(sec.content || "") + '</textarea>' +
       '</div>' +
-      '<button class="btn-row-delete" title="Supprimer la section">&#215;</button>' +
+      '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteSectionTooltip")) + '">&#215;</button>' +
     '</div>';
   }
 
@@ -609,7 +605,7 @@
       html += glossaryRow(item, i);
     });
     html += '</div>';
-    html += '<button class="btn-add-row" id="btnAddGloss">+ Ajouter un terme</button>';
+    html += '<button class="btn-add-row" id="btnAddGloss">' + esc(SmartRevizI18n.t("addTerm")) + '</button>';
     el.innerHTML = html;
 
     document.getElementById("btnAddGloss").addEventListener("click", function() {
@@ -628,10 +624,10 @@
   function glossaryRow(item, i) {
     return '<div class="editor-row" data-idx="' + i + '">' +
       '<div class="editor-row-fields">' +
-        '<input type="text" class="gloss-term" value="' + esc(item.term || "") + '" placeholder="Terme">' +
+        '<input type="text" class="gloss-term" value="' + esc(item.term || "") + '" placeholder="' + esc(SmartRevizI18n.t("placeholderTerm")) + '">' +
         '<textarea class="gloss-def" rows="2">' + esc(item.definition || "") + '</textarea>' +
       '</div>' +
-      '<button class="btn-row-delete" title="Supprimer">&#215;</button>' +
+      '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteTooltip")) + '">&#215;</button>' +
     '</div>';
   }
 
@@ -644,7 +640,7 @@
       html += flashcardRow(fc, i);
     });
     html += '</div>';
-    html += '<button class="btn-add-row" id="btnAddFC">+ Ajouter une flashcard</button>';
+    html += '<button class="btn-add-row" id="btnAddFC">' + esc(SmartRevizI18n.t("addFlashcard")) + '</button>';
     el.innerHTML = html;
 
     document.getElementById("btnAddFC").addEventListener("click", function() {
@@ -664,16 +660,16 @@
     return '<div class="editor-row" data-idx="' + i + '">' +
       '<div class="editor-row-fields">' +
         '<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">' +
-          '<span style="font-size:12px;font-weight:600;color:#6B7280">Type :</span>' +
+          '<span style="font-size:12px;font-weight:600;color:#6B7280">' + esc(SmartRevizI18n.t("labelType")) + '</span>' +
           '<select class="fc-type" style="width:auto;padding:4px 8px;font-size:12px">' +
-            '<option value="concept"' + (fc.type === "concept" ? " selected" : "") + '>Concept</option>' +
-            '<option value="question"' + (fc.type === "question" ? " selected" : "") + '>Question</option>' +
+            '<option value="concept"' + (fc.type === "concept" ? " selected" : "") + '>' + esc(SmartRevizI18n.t("typeConcept")) + '</option>' +
+            '<option value="question"' + (fc.type === "question" ? " selected" : "") + '>' + esc(SmartRevizI18n.t("typeQuestion")) + '</option>' +
           '</select>' +
         '</div>' +
-        '<input type="text" class="fc-front" value="' + esc(fc.front || "") + '" placeholder="Recto (question / terme)">' +
+        '<input type="text" class="fc-front" value="' + esc(fc.front || "") + '" placeholder="' + esc(SmartRevizI18n.t("placeholderFront")) + '">' +
         '<textarea class="fc-back" rows="2">' + esc(fc.back || "") + '</textarea>' +
       '</div>' +
-      '<button class="btn-row-delete" title="Supprimer">&#215;</button>' +
+      '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteTooltip")) + '">&#215;</button>' +
     '</div>';
   }
 
@@ -686,7 +682,7 @@
       html += quizEditorItem(q, i);
     });
     html += '</div>';
-    html += '<button class="btn-add-row" id="btnAddQ">+ Ajouter une question</button>';
+    html += '<button class="btn-add-row" id="btnAddQ">' + esc(SmartRevizI18n.t("addQuestion")) + '</button>';
     el.innerHTML = html;
 
     // Accordion
@@ -702,7 +698,7 @@
       input.addEventListener("input", function() {
         var item = input.closest(".quiz-editor-item");
         var preview = item.querySelector(".quiz-editor-preview");
-        preview.textContent = input.value || "Question…";
+        preview.textContent = input.value || SmartRevizI18n.t("questionPlaceholder");
       });
     });
 
@@ -718,7 +714,7 @@
         newItem.classList.toggle("open");
       });
       newItem.querySelector(".quiz-q-input").addEventListener("input", function(e) {
-        newItem.querySelector(".quiz-editor-preview").textContent = e.target.value || "Question…";
+        newItem.querySelector(".quiz-editor-preview").textContent = e.target.value || SmartRevizI18n.t("questionPlaceholder");
       });
       bindDeleteBtns(container);
       document.getElementById("countQuiz").textContent = container.querySelectorAll(".quiz-editor-item").length;
@@ -734,31 +730,31 @@
     var html = '<div class="quiz-editor-item" data-idx="' + i + '">';
     html += '<div class="quiz-editor-header">';
     html += '<span class="quiz-editor-num">' + (i + 1) + '</span>';
-    html += '<span class="quiz-editor-preview">' + esc(q.question || "Question…") + '</span>';
+    html += '<span class="quiz-editor-preview">' + esc(q.question || SmartRevizI18n.t("questionPlaceholder")) + '</span>';
     html += '<span class="quiz-editor-toggle">&#9660;</span>';
     html += '</div>';
     html += '<div class="quiz-editor-body">';
-    html += '<textarea class="quiz-q-input" rows="2" placeholder="Énoncé de la question" style="margin-top:10px">' + esc(q.question || "") + '</textarea>';
-    html += '<div class="editor-section-label" style="margin-top:12px">Choix de réponses</div>';
+    html += '<textarea class="quiz-q-input" rows="2" placeholder="' + esc(SmartRevizI18n.t("placeholderQuestionText")) + '" style="margin-top:10px">' + esc(q.question || "") + '</textarea>';
+    html += '<div class="editor-section-label" style="margin-top:12px">' + esc(SmartRevizI18n.t("labelChoices")) + '</div>';
     html += '<div class="quiz-choices-grid">';
     choices.forEach(function(c, ci) {
       html += '<div class="quiz-choice-row">';
       html += '<label>' + letters[ci] + '</label>';
-      html += '<input type="text" class="quiz-c-input" data-ci="' + ci + '" value="' + esc(c) + '" placeholder="Réponse ' + letters[ci] + '">';
+      html += '<input type="text" class="quiz-c-input" data-ci="' + ci + '" value="' + esc(c) + '" placeholder="' + esc(SmartRevizI18n.t("placeholderAnswer")) + ' ' + letters[ci] + '">';
       html += '</div>';
     });
     html += '</div>';
     html += '<div class="quiz-correct-row">';
-    html += '<label>Bonne réponse :</label>';
+    html += '<label>' + esc(SmartRevizI18n.t("labelCorrectAnswer")) + '</label>';
     html += '<select class="quiz-correct-sel">';
     letters.forEach(function(l, li) {
       html += '<option value="' + li + '"' + (q.correct === li ? " selected" : "") + '>' + l + '</option>';
     });
     html += '</select>';
     html += '</div>';
-    html += '<div class="editor-section-label" style="margin-top:10px">Explication</div>';
-    html += '<textarea class="quiz-expl-input" rows="2" placeholder="Explication de la bonne réponse">' + esc(q.explanation || "") + '</textarea>';
-    html += '<div class="quiz-delete-row"><button class="btn-row-delete" style="font-size:13px;padding:4px 8px;border:1px solid #FECACA;border-radius:6px;color:#DC2626;background:#FEF2F2" title="Supprimer la question">&#128465; Supprimer</button></div>';
+    html += '<div class="editor-section-label" style="margin-top:10px">' + esc(SmartRevizI18n.t("labelExplanation")) + '</div>';
+    html += '<textarea class="quiz-expl-input" rows="2" placeholder="' + esc(SmartRevizI18n.t("placeholderExplanation")) + '">' + esc(q.explanation || "") + '</textarea>';
+    html += '<div class="quiz-delete-row"><button class="btn-row-delete" style="font-size:13px;padding:4px 8px;border:1px solid #FECACA;border-radius:6px;color:#DC2626;background:#FEF2F2" title="' + esc(SmartRevizI18n.t("deleteQuestionTooltip")) + '">' + SmartRevizI18n.t("btnDeleteQuestion") + '</button></div>';
     html += '</div>';
     html += '</div>';
     return html;
@@ -832,24 +828,24 @@
     var moduleData = collectEditorData();
 
     if (!moduleData.quiz || moduleData.quiz.length === 0) {
-      alert("Le QCM est vide. Ajoutez au moins une question.");
+      alert(SmartRevizI18n.t("errEmptyQuiz"));
       return;
     }
     if (!moduleData.flashcards || moduleData.flashcards.length === 0) {
-      alert("Les flashcards sont vides. Ajoutez au moins une carte.");
+      alert(SmartRevizI18n.t("errEmptyFlashcards"));
       return;
     }
 
     editorPanel.classList.remove("active");
     resultPanel.classList.remove("active");
-    showProgress(60, "Construction du package SCORM...");
+    showProgress(60, SmartRevizI18n.t("progressBuilding"));
 
     generatedModuleHTML = buildPreviewHTML(moduleData);
 
     buildScormPackage(moduleData, moduleData.title)
       .then(function(blob) {
         generatedZipBlob = blob;
-        showProgress(100, "Terminé !");
+        showProgress(100, SmartRevizI18n.t("progressDone"));
         setTimeout(function() {
           progressPanel.classList.remove("active");
           resultPanel.classList.add("active");
@@ -859,7 +855,7 @@
       .catch(function(err) {
         progressPanel.classList.remove("active");
         editorPanel.classList.add("active");
-        showError(err.message || "Erreur lors de la génération.");
+        showError(err.message || SmartRevizI18n.t("errGenerating"));
       });
   });
 

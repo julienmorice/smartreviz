@@ -49,6 +49,39 @@ body {
   margin: 0 auto;
 }
 
+/* Language Switcher */
+.lang-switcher {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+.lang-btn {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lang-btn:hover {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.lang-btn.active {
+  background: rgba(255,255,255,0.95);
+  color: var(--primary);
+  border-color: transparent;
+}
+
 .hero-logo {
   height: 64px;
   width: auto;

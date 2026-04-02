@@ -11,13 +11,17 @@
   <!-- HERO HEADER -->
   <header class="hero">
     <div class="hero-inner">
+      <div class="lang-switcher">
+        <button class="lang-btn active" data-lang="fr">FR</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+      </div>
       <img src="img/logo-imt-bs.png" alt="Logo IMT Business School" class="hero-logo">
       <h1 class="hero-title">SmartReviz</h1>
-      <p class="hero-subtitle">Transformez vos supports de cours en modules de révision interactifs — intégrables à Moodle en SCORM ou téléchargeables en HTML autonome.</p>
+      <p class="hero-subtitle" data-i18n="heroSubtitle">Transformez vos supports de cours en modules de révision interactifs — intégrables à Moodle en SCORM ou téléchargeables en HTML autonome.</p>
       <div class="hero-badges">
-        <span class="badge">&#127891; Compatible Moodle</span>
-        <span class="badge">&#128196; Export HTML</span>
-        <span class="badge">&#129302; Généré par IA</span>
+        <span class="badge" data-i18n="badgeMoodle">&#127891; Compatible Moodle</span>
+        <span class="badge" data-i18n="badgeHTML">&#128196; Export HTML</span>
+        <span class="badge" data-i18n="badgeAI">&#129302; Généré par IA</span>
       </div>
     </div>
   </header>
@@ -27,27 +31,27 @@
     <div class="features-inner">
       <div class="feature-item">
         <div class="feature-icon">&#128209;</div>
-        <div class="feature-label">Résumé</div>
+        <div class="feature-label" data-i18n="featResume">Résumé</div>
       </div>
       <div class="feature-sep">&#8250;</div>
       <div class="feature-item">
         <div class="feature-icon">&#128218;</div>
-        <div class="feature-label">Glossaire</div>
+        <div class="feature-label" data-i18n="featGlossaire">Glossaire</div>
       </div>
       <div class="feature-sep">&#8250;</div>
       <div class="feature-item">
         <div class="feature-icon">&#127919;</div>
-        <div class="feature-label">Matching</div>
+        <div class="feature-label" data-i18n="featMatching">Matching</div>
       </div>
       <div class="feature-sep">&#8250;</div>
       <div class="feature-item">
         <div class="feature-icon">&#127183;</div>
-        <div class="feature-label">Flashcards</div>
+        <div class="feature-label" data-i18n="featFlashcards">Flashcards</div>
       </div>
       <div class="feature-sep">&#8250;</div>
       <div class="feature-item">
         <div class="feature-icon">&#9989;</div>
-        <div class="feature-label">QCM</div>
+        <div class="feature-label" data-i18n="featQCM">QCM</div>
       </div>
     </div>
   </section>
@@ -61,19 +65,19 @@
       <div class="step">
         <div class="step-title">
           <span class="step-num">1</span>
-          Votre document de cours
+          <span data-i18n="step1Title">Votre document de cours</span>
         </div>
         <div class="dropzone" id="dropzone">
           <div class="dz-icon">&#128196;</div>
-          <div class="dz-text" id="dzText">Glissez votre fichier ici ou cliquez</div>
-          <div class="dz-formats">.txt &nbsp;·&nbsp; .md &nbsp;·&nbsp; .docx &nbsp;·&nbsp; .pdf</div>
+          <div class="dz-text" id="dzText" data-i18n="dzText">Glissez votre fichier ici ou cliquez</div>
+          <div class="dz-formats" data-i18n="dzFormats">.txt &nbsp;·&nbsp; .md &nbsp;·&nbsp; .docx &nbsp;·&nbsp; .pdf</div>
           <input type="file" id="fileInput" accept=".txt,.md,.docx,.pdf">
         </div>
         <div class="text-toggle">
-          <button id="toggleTextInput">ou coller du texte directement</button>
+          <button id="toggleTextInput" data-i18n="toggleText">ou coller du texte directement</button>
         </div>
         <div class="text-input-area" id="textInputArea">
-          <textarea id="textInput" placeholder="Collez le contenu de votre cours ici..."></textarea>
+          <textarea id="textInput" data-i18n-placeholder="textPlaceholder" placeholder="Collez le contenu de votre cours ici..."></textarea>
         </div>
       </div>
 
@@ -83,17 +87,17 @@
       <div class="step">
         <div class="step-title">
           <span class="step-num">2</span>
-          Options
+          <span data-i18n="step2Title">Options</span>
         </div>
         <div class="form-row">
-          <label for="moduleTitle">Titre du module</label>
-          <input type="text" id="moduleTitle" placeholder="Ex : Éthique de l'IA en santé">
+          <label for="moduleTitle" data-i18n="labelTitle">Titre du module</label>
+          <input type="text" id="moduleTitle" data-i18n-placeholder="titlePlaceholder" placeholder="Ex : Éthique de l'IA en santé">
         </div>
         <div class="form-row">
-          <label for="moduleLang">Langue du module</label>
+          <label for="moduleLang" data-i18n="labelLang">Langue du module</label>
           <select id="moduleLang">
-            <option value="fr">&#127467;&#127479; Français</option>
-            <option value="en">&#127468;&#127463; Anglais</option>
+            <option value="fr" data-i18n="langFR">&#127467;&#127479; Français</option>
+            <option value="en" data-i18n="langEN">&#127468;&#127463; Anglais</option>
           </select>
         </div>
       </div>
@@ -102,7 +106,7 @@
       <div class="generate-container">
         <button class="btn-generate" id="btnGenerate">
           <span class="btn-generate-icon">&#10024;</span>
-          Générer le module
+          <span data-i18n="btnGenerate">Générer le module</span>
         </button>
       </div>
 
@@ -113,16 +117,16 @@
       <div class="editor-header">
         <div class="step-title">
           <span class="step-num">3</span>
-          Vérifiez et modifiez le contenu généré
+          <span data-i18n="step3Title">Vérifiez et modifiez le contenu généré</span>
         </div>
-        <p class="editor-subtitle">Corrigez les éventuelles erreurs de l'IA avant de générer votre module.</p>
+        <p class="editor-subtitle" data-i18n="editorSubtitle">Corrigez les éventuelles erreurs de l'IA avant de générer votre module.</p>
       </div>
 
       <div class="editor-tabs" id="editorTabs">
-        <button class="tab-btn active" data-tab="summary">&#128209; Résumé</button>
-        <button class="tab-btn" data-tab="glossary">&#128218; Glossaire <span class="tab-count" id="countGlossary"></span></button>
-        <button class="tab-btn" data-tab="flashcards">&#127183; Flashcards <span class="tab-count" id="countFlashcards"></span></button>
-        <button class="tab-btn" data-tab="quiz">&#9989; QCM <span class="tab-count" id="countQuiz"></span></button>
+        <button class="tab-btn active" data-tab="summary" data-i18n="tabSummary">&#128209; Résumé</button>
+        <button class="tab-btn" data-tab="glossary"><span data-i18n="tabGlossary">&#128218; Glossaire</span> <span class="tab-count" id="countGlossary"></span></button>
+        <button class="tab-btn" data-tab="flashcards"><span data-i18n="tabFlashcards">&#127183; Flashcards</span> <span class="tab-count" id="countFlashcards"></span></button>
+        <button class="tab-btn" data-tab="quiz"><span data-i18n="tabQuiz">&#9989; QCM</span> <span class="tab-count" id="countQuiz"></span></button>
       </div>
 
       <div class="tab-content active" id="tab-summary"></div>
@@ -131,7 +135,7 @@
       <div class="tab-content" id="tab-quiz"></div>
 
       <div class="editor-footer">
-        <button class="btn-validate-generate" id="btnValidateGenerate">
+        <button class="btn-validate-generate" id="btnValidateGenerate" data-i18n="btnValidate">
           &#10024; Valider et générer le module
         </button>
       </div>
@@ -139,35 +143,35 @@
 
     <!-- Progress -->
     <div class="progress-panel" id="progressPanel">
-      <h3 id="progressTitle">Génération en cours…</h3>
+      <h3 id="progressTitle" data-i18n="progressTitle">Génération en cours…</h3>
       <div class="progress-bar-track">
         <div class="progress-bar-fill" id="progressFill"></div>
       </div>
       <div class="progress-details">
-        <p class="progress-status" id="progressStatus">Initialisation…</p>
+        <p class="progress-status" id="progressStatus" data-i18n="progressInit">Initialisation…</p>
         <p class="progress-percent" id="progressPercent">0%</p>
       </div>
     </div>
 
     <!-- Error -->
     <div class="error-panel" id="errorPanel">
-      <strong>&#9888; Erreur</strong>
+      <strong data-i18n="errorLabel">&#9888; Erreur</strong>
       <span id="errorMessage"></span>
     </div>
 
     <!-- Result -->
     <div class="result-panel" id="resultPanel">
       <div class="result-check">&#10003;</div>
-      <h3>Module prêt !</h3>
-      <p class="result-hint">Choisissez votre format de téléchargement</p>
+      <h3 data-i18n="resultTitle">Module prêt !</h3>
+      <p class="result-hint" data-i18n="resultHint">Choisissez votre format de téléchargement</p>
       <div class="result-buttons">
-        <button class="btn-download" id="btnDownload">
+        <button class="btn-download" id="btnDownload" data-i18n="btnSCORM">
           <span>&#128230;</span> SCORM pour Moodle
         </button>
-        <button class="btn-download-html" id="btnDownloadHTML">
+        <button class="btn-download-html" id="btnDownloadHTML" data-i18n="btnHTML">
           <span>&#127758;</span> HTML autonome
         </button>
-        <button class="btn-preview" id="btnPreview">
+        <button class="btn-preview" id="btnPreview" data-i18n="btnPreview">
           <span>&#128065;</span> Prévisualiser
         </button>
       </div>
@@ -178,10 +182,11 @@
   <!-- VIDEO SECTION -->
   <section class="video-section">
     <div class="video-inner">
-      <h2 class="video-title">Voir SmartReviz en action</h2>
-      <p class="video-subtitle">Découvrez comment générer un module de révision complet en quelques minutes</p>
+      <h2 class="video-title" data-i18n="videoTitle">Voir SmartReviz en action</h2>
+      <p class="video-subtitle" data-i18n="videoSubtitle">Découvrez comment générer un module de révision complet en quelques minutes</p>
       <div class="video-wrapper">
         <iframe
+          data-i18n-title="videoIframeTitle"
           title="Lecteur vidéo"
           src="https://mediaserver.ip-paris.fr/permalink/v126d39c879d4ddyw9y6/iframe/"
           allowfullscreen="allowfullscreen"
@@ -195,35 +200,35 @@
   <!-- CAROUSEL SHOWCASE -->
   <section class="showcase">
     <div class="showcase-inner">
-      <h2 class="showcase-title">Aperçu du module généré</h2>
-      <p class="showcase-subtitle">5 activités interactives créées automatiquement à partir de votre cours</p>
+      <h2 class="showcase-title" data-i18n="carouselTitle">Aperçu du module généré</h2>
+      <p class="showcase-subtitle" data-i18n="carouselSubtitle">5 activités interactives créées automatiquement à partir de votre cours</p>
 
       <div class="carousel" id="carousel">
         <div class="carousel-track" id="carouselTrack">
           <div class="carousel-slide">
-            <div class="slide-label">01 — Résumé</div>
+            <div class="slide-label" data-i18n="slide1">01 — Résumé</div>
             <img src="img/1_resume.png" alt="Résumé du cours">
           </div>
           <div class="carousel-slide">
-            <div class="slide-label">02 — Glossaire</div>
+            <div class="slide-label" data-i18n="slide2">02 — Glossaire</div>
             <img src="img/2_glossaire.png" alt="Glossaire interactif">
           </div>
           <div class="carousel-slide">
-            <div class="slide-label">03 — Matching</div>
+            <div class="slide-label" data-i18n="slide3">03 — Matching</div>
             <img src="img/3_matching.png" alt="Activité de matching">
           </div>
           <div class="carousel-slide">
-            <div class="slide-label">04 — Flashcards</div>
+            <div class="slide-label" data-i18n="slide4">04 — Flashcards</div>
             <img src="img/4_flashCard.png" alt="Flashcards">
           </div>
           <div class="carousel-slide">
-            <div class="slide-label">05 — QCM</div>
+            <div class="slide-label" data-i18n="slide5">05 — QCM</div>
             <img src="img/5_qcm.png" alt="Questionnaire à choix multiples">
           </div>
         </div>
 
-        <button class="carousel-btn prev" id="carouselPrev" aria-label="Précédent">&#8249;</button>
-        <button class="carousel-btn next" id="carouselNext" aria-label="Suivant">&#8250;</button>
+        <button class="carousel-btn prev" id="carouselPrev" data-i18n-aria="carouselPrevLabel" aria-label="Précédent">&#8249;</button>
+        <button class="carousel-btn next" id="carouselNext" data-i18n-aria="carouselNextLabel" aria-label="Suivant">&#8250;</button>
       </div>
 
       <div class="carousel-dots" id="carouselDots">
@@ -239,7 +244,7 @@
   <footer class="footer">
     <span>IMT-BS SmartReviz</span>
     <span class="footer-sep">·</span>
-    <span>Auteur : Julien MORICE</span>
+    <span data-i18n="footerAuthor">Auteur : Julien MORICE</span>
     <span class="footer-sep">·</span>
     <a href="mailto:julien.morice@imt-bs.eu">julien.morice@imt-bs.eu</a>
     <span class="footer-sep">·</span>
@@ -250,8 +255,16 @@
   <script src="lib/mammoth.browser.min.js"></script>
   <script src="lib/pdf.min.js"></script>
   <script src="lib/marked.min.js"></script>
-  <script src="app.js?v=3"></script>
+  <script src="i18n.js"></script>
+  <script src="app.js?v=4"></script>
   <script>
+    // Language switcher
+    document.querySelectorAll('.lang-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        window.SmartRevizI18n.setLang(btn.dataset.lang);
+      });
+    });
+
     // Carousel
     const track = document.getElementById('carouselTrack');
     const dots = document.querySelectorAll('.dot');
