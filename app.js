@@ -218,7 +218,7 @@
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 16384,
+        max_tokens: 8192,
         messages: [
           {
             role: "user",
@@ -233,16 +233,25 @@
       }),
     })
       .then(function (response) {
-        if (!response.ok) {
-          return response.json().then(function (err) {
+        return response.text().then(function (text) {
+          var data;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            if (response.status === 524) {
+              throw new Error(SmartRevizI18n.t("errTimeout"));
+            }
+            throw new Error("API Error (" + response.status + "): " + text.substring(0, 200));
+          }
+          if (!response.ok) {
             throw new Error(
-              err.error
-                ? err.error.message
+              data.error
+                ? data.error.message
                 : "API Error (" + response.status + ")"
             );
-          });
-        }
-        return response.json();
+          }
+          return data;
+        });
       })
       .then(function (data) {
         var content = data.content[0].text;
