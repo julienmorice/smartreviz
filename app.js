@@ -205,8 +205,8 @@
       "- Le glossaire doit contenir les termes techniques essentiels avec des définitions complètes\n\n" +
       "IMPORTANT : Réponds UNIQUEMENT avec l'objet JSON brut. Pas de ```json, pas de commentaire, pas de texte avant ou après. Juste le JSON.";
 
-    // Truncate if necessary (~100K chars ≈ ~25K tokens, fits within Cloudflare 100s timeout)
-    var maxChars = 100000;
+    // Truncate if necessary (~60K chars ≈ ~15 pages, fits within Cloudflare 100s timeout)
+    var maxChars = 60000;
     if (text.length > maxChars) {
       text = text.substring(0, maxChars);
       console.warn("SmartReviz — Text truncated from " + text.length + " to " + maxChars + " chars");

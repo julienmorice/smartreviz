@@ -24,6 +24,7 @@
       step1Title: "Votre document de cours",
       dzText: "Glissez votre fichier ici ou cliquez",
       dzFormats: ".txt \u00a0·\u00a0 .md \u00a0·\u00a0 .docx \u00a0·\u00a0 .pdf",
+      dzLimit: "15 pages maximum recommandées",
       toggleText: "ou coller du texte directement",
       textPlaceholder: "Collez le contenu de votre cours ici...",
 
@@ -157,6 +158,7 @@
       step1Title: "Your course document",
       dzText: "Drag your file here or click",
       dzFormats: ".txt \u00a0·\u00a0 .md \u00a0·\u00a0 .docx \u00a0·\u00a0 .pdf",
+      dzLimit: "15 pages maximum recommended",
       toggleText: "or paste text directly",
       textPlaceholder: "Paste your course content here...",
 

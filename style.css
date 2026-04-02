@@ -288,6 +288,7 @@ input:focus, select:focus {
 .dropzone .dz-icon { font-size: 32px; margin-bottom: 8px; }
 .dropzone .dz-text { font-size: 15px; font-weight: 600; }
 .dropzone .dz-formats { font-size: 13px; margin-top: 4px; opacity: 0.65; }
+.dropzone .dz-limit { font-size: 12px; margin-top: 6px; opacity: 0.5; font-style: italic; }
 .dropzone input[type="file"] { display: none; }
 
 .text-toggle {
