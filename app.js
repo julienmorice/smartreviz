@@ -178,26 +178,31 @@
       "Tu es un assistant pédagogique spécialisé dans la création de modules de révision.\n" +
       "À partir du contenu de cours fourni, tu DOIS générer un objet JSON contenant EXACTEMENT ces 4 clés :\n\n" +
       '1. "summary" : un objet avec 3 clés :\n' +
-      '   - "overview" : string — un paragraphe court (4-6 phrases) qui résume l\'ensemble du document de manière synthétique\n' +
-      '   - "keyPoints" : tableau de 3 à 5 strings — les points clés essentiels du cours, chaque point est une phrase complète\n' +
-      '   - "chapters" : tableau de chapitres. Chaque chapitre a "title" (string) et "sections" (tableau d\'objets avec "title" et "content")\n\n' +
-      '2. "glossary" : tableau de 10 à 15 objets, chacun avec "term" (string) et "definition" (string).\n\n' +
-      '3. "flashcards" : tableau de EXACTEMENT 10 objets. Chaque objet a "type" ("concept" ou "question"), "front" (string) et "back" (string). Mélange les deux types.\n\n' +
+      '   - "overview" : string — un paragraphe de synthèse complet (6 à 8 phrases) couvrant l\'ensemble du document : contexte, enjeux principaux, structure du cours et apports clés. Rédigé en prose fluide, sans liste ni bullet point.\n' +
+      '   - "keyPoints" : tableau de 4 à 6 strings — les points clés essentiels du cours. Chaque point est une phrase complète et autonome (sujet + verbe + complément), qui apporte une information substantielle, pas un simple titre de rubrique.\n' +
+      '   - "chapters" : tableau de 4 à 8 chapitres thématiques couvrant l\'ensemble du document. Chaque chapitre a :\n' +
+      '       * "title" : string — titre thématique clair du chapitre\n' +
+      '       * "sections" : tableau de 1 à 3 objets, chacun avec :\n' +
+      '           - "title" : string — sous-titre de la section\n' +
+      '           - "content" : string — paragraphe rédigé de 4 à 6 phrases complètes expliquant en détail le contenu de cette section. Ce contenu doit être informatif, précis, et rédigé en prose continue (pas de listes, pas de mots-clés isolés). Il doit mentionner des faits, chiffres, noms ou exemples concrets tirés du document source.\n\n' +
+      '2. "glossary" : tableau de 10 à 15 objets, chacun avec "term" (string) et "definition" (string — définition complète en 2-3 phrases).\n\n' +
+      '3. "flashcards" : tableau de EXACTEMENT 10 objets. Chaque objet a "type" ("concept" ou "question"), "front" (string) et "back" (string — réponse développée en 2-3 phrases). Mélange les deux types.\n\n' +
       '4. "quiz" : tableau de EXACTEMENT 10 objets. Chaque objet a :\n' +
       '   - "question" : string (l\'énoncé)\n' +
       '   - "choices" : tableau de exactement 4 strings\n' +
       '   - "correct" : integer (0, 1, 2 ou 3 — index de la bonne réponse)\n' +
-      '   - "explanation" : string (explication courte)\n\n' +
+      '   - "explanation" : string (explication de 2-3 phrases justifiant la bonne réponse)\n\n' +
       "Langue de sortie : " + langLabel + "\n\n" +
       "Règles STRICTES :\n" +
       "- Tu DOIS inclure les 4 sections : summary, glossary, flashcards ET quiz\n" +
       "- flashcards : EXACTEMENT 10 cartes, ni plus ni moins\n" +
       "- quiz : EXACTEMENT 10 questions, ni plus ni moins\n" +
-      "- Le résumé doit être synthétique mais couvrir l'ensemble du document\n" +
+      "- INTERDIT dans le résumé : listes à puces, tirets, mots-clés isolés, phrases incomplètes. Uniquement de la prose rédigée.\n" +
+      "- Chaque section du résumé doit être substantielle : mentionner des informations précises (noms, dates, chiffres, exemples) tirées du document source\n" +
       "- Les questions doivent tester la compréhension, pas la mémorisation de détails\n" +
       "- Les distracteurs (mauvaises réponses) doivent être plausibles\n" +
       "- Les flashcards doivent couvrir les concepts fondamentaux\n" +
-      "- Le glossaire doit contenir les termes techniques essentiels\n\n" +
+      "- Le glossaire doit contenir les termes techniques essentiels avec des définitions complètes\n\n" +
       "IMPORTANT : Réponds UNIQUEMENT avec l'objet JSON brut. Pas de ```json, pas de commentaire, pas de texte avant ou après. Juste le JSON.";
 
     // Truncate if necessary (~100K chars ≈ ~25K tokens)
@@ -218,7 +223,9 @@
           {
             role: "user",
             content:
-              "Voici le contenu du cours à transformer en module de révision :\n\n" +
+              (language === "fr"
+                ? "Voici le contenu du cours à transformer en module de révision :\n\n"
+                : "Here is the course content to transform into a revision module:\n\n") +
               text,
           },
         ],
@@ -490,7 +497,7 @@
 
     // Overview
     html += '<div class="editor-section-label">' + esc(SmartRevizI18n.t("edOverview")) + '</div>';
-    html += '<textarea id="ed-overview" rows="4">' + esc(summary.overview || "") + '</textarea>';
+    html += '<textarea id="ed-overview" rows="6">' + esc(summary.overview || "") + '</textarea>';
 
     // Key points
     html += '<div class="editor-section-label">' + esc(SmartRevizI18n.t("edKeyPoints")) + '</div>';
@@ -567,7 +574,7 @@
     return '<div class="section-block" data-si="' + si + '">' +
       '<div class="section-block-fields">' +
         '<input type="text" class="sec-title" value="' + esc(sec.title || "") + '" placeholder="' + esc(SmartRevizI18n.t("placeholderSectionTitle")) + '">' +
-        '<textarea class="sec-content" rows="3">' + esc(sec.content || "") + '</textarea>' +
+        '<textarea class="sec-content" rows="6">' + esc(sec.content || "") + '</textarea>' +
       '</div>' +
       '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteSectionTooltip")) + '">&#215;</button>' +
     '</div>';
