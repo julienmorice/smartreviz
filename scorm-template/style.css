@@ -537,7 +537,7 @@ body {
 
 .flashcard {
   width: 100%;
-  min-height: 260px;
+  height: 280px;
   cursor: pointer;
   position: relative;
   transform-style: preserve-3d;
@@ -557,9 +557,10 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px;
+  padding: 24px;
   text-align: center;
-  font-size: 18px;
+  font-size: 16px;
+  overflow-y: auto;
 }
 
 .flashcard-front {
