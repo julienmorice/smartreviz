@@ -85,8 +85,7 @@
       progressInit: "Initialisation…",
       progressExtracting: "Extraction du texte...",
       progressLoadingTemplates: "Chargement des templates SCORM...",
-      progressCondensing: "Étape 1/2 — Analyse et condensation du document...",
-      progressGenerating: "Étape 2/2 — Génération du module pédagogique...",
+      progressCallingAPI: "Appel API Claude — génération du contenu pédagogique...",
       progressBuilding: "Construction du package SCORM...",
       progressDone: "Terminé !",
 
@@ -220,8 +219,7 @@
       progressInit: "Initializing…",
       progressExtracting: "Extracting text...",
       progressLoadingTemplates: "Loading SCORM templates...",
-      progressCondensing: "Step 1/2 — Analyzing and condensing the document...",
-      progressGenerating: "Step 2/2 — Generating the educational module...",
+      progressCallingAPI: "Calling Claude API — generating educational content...",
       progressBuilding: "Building SCORM package...",
       progressDone: "Done!",
 

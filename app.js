@@ -171,12 +171,67 @@
   }
 
   // --- Claude API Call (via proxy Cloudflare Worker) ---
-  // --- Helper: call proxy and parse response ---
-  function callProxy(body) {
+  function callClaudeAPI(text, language) {
+    var langLabel = language === "fr" ? "Français" : "English";
+
+    var systemPrompt =
+      "Tu es un assistant pédagogique spécialisé dans la création de modules de révision.\n" +
+      "À partir du contenu de cours fourni, tu DOIS générer un objet JSON contenant EXACTEMENT ces 4 clés :\n\n" +
+      '1. "summary" : un objet avec 3 clés :\n' +
+      '   - "overview" : string — un paragraphe de synthèse complet (6 à 8 phrases) couvrant l\'ensemble du document : contexte, enjeux principaux, structure du cours et apports clés. Rédigé en prose fluide, sans liste ni bullet point.\n' +
+      '   - "keyPoints" : tableau de 4 à 6 strings — les points clés essentiels du cours. Chaque point est une phrase complète et autonome (sujet + verbe + complément), qui apporte une information substantielle, pas un simple titre de rubrique.\n' +
+      '   - "chapters" : tableau de 4 à 8 chapitres thématiques couvrant l\'ensemble du document. Chaque chapitre a :\n' +
+      '       * "title" : string — titre thématique clair du chapitre\n' +
+      '       * "sections" : tableau de 1 à 3 objets, chacun avec :\n' +
+      '           - "title" : string — sous-titre de la section\n' +
+      '           - "content" : string — paragraphe rédigé de 4 à 6 phrases complètes expliquant en détail le contenu de cette section. Ce contenu doit être informatif, précis, et rédigé en prose continue (pas de listes, pas de mots-clés isolés). Il doit mentionner des faits, chiffres, noms ou exemples concrets tirés du document source.\n\n' +
+      '2. "glossary" : tableau de 10 à 15 objets, chacun avec "term" (string) et "definition" (string — définition complète en 2-3 phrases).\n\n' +
+      '3. "flashcards" : tableau de EXACTEMENT 10 objets. Chaque objet a "type" ("concept" ou "question"), "front" (string) et "back" (string — réponse développée en 2-3 phrases). Mélange les deux types.\n\n' +
+      '4. "quiz" : tableau de EXACTEMENT 10 objets. Chaque objet a :\n' +
+      '   - "question" : string (l\'énoncé)\n' +
+      '   - "choices" : tableau de exactement 4 strings\n' +
+      '   - "correct" : integer (0, 1, 2 ou 3 — index de la bonne réponse)\n' +
+      '   - "explanation" : string (explication de 2-3 phrases justifiant la bonne réponse)\n\n' +
+      "Langue de sortie : " + langLabel + "\n\n" +
+      "Règles STRICTES :\n" +
+      "- Tu DOIS inclure les 4 sections : summary, glossary, flashcards ET quiz\n" +
+      "- flashcards : EXACTEMENT 10 cartes, ni plus ni moins\n" +
+      "- quiz : EXACTEMENT 10 questions, ni plus ni moins\n" +
+      "- INTERDIT dans le résumé : listes à puces, tirets, mots-clés isolés, phrases incomplètes. Uniquement de la prose rédigée.\n" +
+      "- Chaque section du résumé doit être substantielle : mentionner des informations précises (noms, dates, chiffres, exemples) tirées du document source\n" +
+      "- Les questions doivent tester la compréhension, pas la mémorisation de détails\n" +
+      "- Les distracteurs (mauvaises réponses) doivent être plausibles\n" +
+      "- Les flashcards doivent couvrir les concepts fondamentaux\n" +
+      "- Le glossaire doit contenir les termes techniques essentiels avec des définitions complètes\n\n" +
+      "IMPORTANT : Réponds UNIQUEMENT avec l'objet JSON brut. Pas de ```json, pas de commentaire, pas de texte avant ou après. Juste le JSON.";
+
+    // Truncate if necessary (~60K chars ≈ ~15 pages, fits within Cloudflare 100s timeout)
+    var maxChars = 60000;
+    if (text.length > maxChars) {
+      text = text.substring(0, maxChars);
+      console.warn("SmartReviz — Text truncated from " + text.length + " to " + maxChars + " chars");
+    }
+
     return fetch(PROXY_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 8192,
+        messages: [
+          {
+            role: "user",
+            content:
+              (language === "fr"
+                ? "Voici le contenu du cours à transformer en module de révision :\n\n"
+                : "Here is the course content to transform into a revision module:\n\n") +
+              text,
+          },
+        ],
+        system: systemPrompt,
+      }),
     })
       .then(function (response) {
         return response.text().then(function (text) {
@@ -201,135 +256,31 @@
       })
       .then(function (data) {
         var content = data.content[0].text;
-        return content.replace(/^```json?\s*\n?/, "").replace(/\n?```\s*$/, "").replace(/^```markdown?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
-      });
-  }
+        // Remove potential markdown code block wrapping
+        content = content.replace(/^```json?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
+        var parsed = JSON.parse(content);
 
-  // --- Step 1: Condense document to structured markdown ---
-  function condenseToMarkdown(text, language) {
-    var langLabel = language === "fr" ? "Français" : "English";
+        // Validate required sections exist
+        if (!parsed.summary || !parsed.summary.chapters || !Array.isArray(parsed.summary.chapters)) {
+          throw new Error(SmartRevizI18n.t("errSummary"));
+        }
+        if (!parsed.glossary || !Array.isArray(parsed.glossary) || parsed.glossary.length === 0) {
+          throw new Error(SmartRevizI18n.t("errGlossary"));
+        }
+        if (!parsed.flashcards || !Array.isArray(parsed.flashcards) || parsed.flashcards.length === 0) {
+          throw new Error(SmartRevizI18n.t("errFlashcards"));
+        }
+        if (!parsed.quiz || !Array.isArray(parsed.quiz) || parsed.quiz.length === 0) {
+          throw new Error(SmartRevizI18n.t("errQuiz"));
+        }
 
-    // Truncate very long documents (~400K chars max, condensation handles the rest)
-    var maxChars = 400000;
-    if (text.length > maxChars) {
-      text = text.substring(0, maxChars);
-      console.warn("SmartReviz — Text truncated to " + maxChars + " chars before condensation");
-    }
+        console.log("SmartReviz — Données générées :",
+          parsed.summary.chapters.length, "chapitres,",
+          parsed.glossary.length, "termes,",
+          parsed.flashcards.length, "flashcards,",
+          parsed.quiz.length, "questions QCM");
 
-    var systemPrompt =
-      "Tu es un assistant pédagogique expert en synthèse de documents.\n" +
-      "À partir du contenu de cours fourni, produis un document Markdown structuré et détaillé qui servira de base à la création d'un module de révision.\n\n" +
-      "Le document Markdown DOIT :\n" +
-      "- Couvrir l'INTÉGRALITÉ du contenu source, sans rien omettre d'important\n" +
-      "- Être organisé en sections avec des titres ## et sous-titres ###\n" +
-      "- Contenir des paragraphes rédigés en prose complète (4-6 phrases par paragraphe)\n" +
-      "- Mentionner tous les faits, chiffres, noms, dates et exemples concrets du document source\n" +
-      "- Être rédigé de manière fluide et pédagogique, pas sous forme de liste de mots-clés\n" +
-      "- Faire environ 3000 à 5000 mots (assez détaillé pour générer ensuite un module complet)\n\n" +
-      "INTERDIT : listes à puces comme contenu principal, mots-clés isolés, phrases télégraphiques.\n" +
-      "Les listes sont autorisées uniquement pour énumérer des éléments spécifiques (noms de modèles, fonctionnalités, etc.)\n\n" +
-      "Langue de sortie : " + langLabel + "\n\n" +
-      "Réponds UNIQUEMENT avec le document Markdown. Pas de commentaire avant ou après.";
-
-    return callProxy({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 6000,
-      messages: [
-        {
-          role: "user",
-          content:
-            (language === "fr"
-              ? "Voici le contenu du cours à synthétiser en Markdown structuré :\n\n"
-              : "Here is the course content to synthesize into structured Markdown:\n\n") +
-            text,
-        },
-      ],
-      system: systemPrompt,
-    });
-  }
-
-  // --- Step 2: Generate module JSON from condensed markdown ---
-  function generateModuleFromMarkdown(markdown, language) {
-    var langLabel = language === "fr" ? "Français" : "English";
-
-    var systemPrompt =
-      "Tu es un assistant pédagogique spécialisé dans la création de modules de révision.\n" +
-      "À partir du document Markdown structuré fourni, tu DOIS générer un objet JSON contenant EXACTEMENT ces 4 clés :\n\n" +
-      '1. "summary" : un objet avec 3 clés :\n' +
-      '   - "overview" : string — un paragraphe de synthèse complet (6 à 8 phrases) couvrant l\'ensemble du document : contexte, enjeux principaux, structure du cours et apports clés. Rédigé en prose fluide, sans liste ni bullet point.\n' +
-      '   - "keyPoints" : tableau de 4 à 6 strings — les points clés essentiels du cours. Chaque point est une phrase complète et autonome (sujet + verbe + complément), qui apporte une information substantielle, pas un simple titre de rubrique.\n' +
-      '   - "chapters" : tableau de 4 à 8 chapitres thématiques couvrant l\'ensemble du document. Chaque chapitre a :\n' +
-      '       * "title" : string — titre thématique clair du chapitre\n' +
-      '       * "sections" : tableau de 1 à 3 objets, chacun avec :\n' +
-      '           - "title" : string — sous-titre de la section\n' +
-      '           - "content" : string — paragraphe rédigé de 4 à 6 phrases complètes expliquant en détail le contenu de cette section. Ce contenu doit être informatif, précis, et rédigé en prose continue (pas de listes, pas de mots-clés isolés). Il doit mentionner des faits, chiffres, noms ou exemples concrets.\n\n' +
-      '2. "glossary" : tableau de 10 à 15 objets, chacun avec "term" (string) et "definition" (string — définition complète en 2-3 phrases).\n\n' +
-      '3. "flashcards" : tableau de EXACTEMENT 10 objets. Chaque objet a "type" ("concept" ou "question"), "front" (string) et "back" (string — réponse développée en 2-3 phrases). Mélange les deux types.\n\n' +
-      '4. "quiz" : tableau de EXACTEMENT 10 objets. Chaque objet a :\n' +
-      '   - "question" : string (l\'énoncé)\n' +
-      '   - "choices" : tableau de exactement 4 strings\n' +
-      '   - "correct" : integer (0, 1, 2 ou 3 — index de la bonne réponse)\n' +
-      '   - "explanation" : string (explication de 2-3 phrases justifiant la bonne réponse)\n\n' +
-      "Langue de sortie : " + langLabel + "\n\n" +
-      "Règles STRICTES :\n" +
-      "- Tu DOIS inclure les 4 sections : summary, glossary, flashcards ET quiz\n" +
-      "- flashcards : EXACTEMENT 10 cartes, ni plus ni moins\n" +
-      "- quiz : EXACTEMENT 10 questions, ni plus ni moins\n" +
-      "- INTERDIT dans le résumé : listes à puces, tirets, mots-clés isolés, phrases incomplètes. Uniquement de la prose rédigée.\n" +
-      "- Chaque section du résumé doit être substantielle : mentionner des informations précises (noms, dates, chiffres, exemples)\n" +
-      "- Les questions doivent tester la compréhension, pas la mémorisation de détails\n" +
-      "- Les distracteurs (mauvaises réponses) doivent être plausibles\n" +
-      "- Les flashcards doivent couvrir les concepts fondamentaux\n" +
-      "- Le glossaire doit contenir les termes techniques essentiels avec des définitions complètes\n\n" +
-      "IMPORTANT : Réponds UNIQUEMENT avec l'objet JSON brut. Pas de ```json, pas de commentaire, pas de texte avant ou après. Juste le JSON.";
-
-    return callProxy({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 8192,
-      messages: [
-        {
-          role: "user",
-          content:
-            (language === "fr"
-              ? "Voici le document Markdown structuré à transformer en module de révision :\n\n"
-              : "Here is the structured Markdown document to transform into a revision module:\n\n") +
-            markdown,
-        },
-      ],
-      system: systemPrompt,
-    }).then(function (content) {
-      var parsed = JSON.parse(content);
-
-      // Validate required sections exist
-      if (!parsed.summary || !parsed.summary.chapters || !Array.isArray(parsed.summary.chapters)) {
-        throw new Error(SmartRevizI18n.t("errSummary"));
-      }
-      if (!parsed.glossary || !Array.isArray(parsed.glossary) || parsed.glossary.length === 0) {
-        throw new Error(SmartRevizI18n.t("errGlossary"));
-      }
-      if (!parsed.flashcards || !Array.isArray(parsed.flashcards) || parsed.flashcards.length === 0) {
-        throw new Error(SmartRevizI18n.t("errFlashcards"));
-      }
-      if (!parsed.quiz || !Array.isArray(parsed.quiz) || parsed.quiz.length === 0) {
-        throw new Error(SmartRevizI18n.t("errQuiz"));
-      }
-
-      console.log("SmartReviz — Module generated:",
-        parsed.summary.chapters.length, "chapters,",
-        parsed.glossary.length, "terms,",
-        parsed.flashcards.length, "flashcards,",
-        parsed.quiz.length, "quiz questions");
-
-      return parsed;
-    });
-  }
-
-  // --- Full pipeline: condense then generate ---
-  function callClaudeAPI(text, language) {
-    return condenseToMarkdown(text, language)
-      .then(function (markdown) {
-        console.log("SmartReviz — Condensed to " + markdown.length + " chars markdown");
-        return generateModuleFromMarkdown(markdown, language);
+        return parsed;
       });
   }
 
@@ -463,16 +414,9 @@
         return loadScormTemplate();
       })
       .then(function () {
-        // Step 1: Condense document
-        startAnimatedProgress(35, 55, 25000, SmartRevizI18n.t("progressCondensing"));
-        return condenseToMarkdown(extractedText, lang);
-      })
-      .then(function (markdown) {
-        stopAnimatedProgress();
-        console.log("SmartReviz — Condensed to " + markdown.length + " chars markdown");
-        // Step 2: Generate module from markdown
-        startAnimatedProgress(55, 85, 25000, SmartRevizI18n.t("progressGenerating"));
-        return generateModuleFromMarkdown(markdown, lang);
+        // Animate progress from 35% to 80% over ~30s during API call
+        startAnimatedProgress(35, 80, 30000, SmartRevizI18n.t("progressCallingAPI"));
+        return callClaudeAPI(extractedText, lang);
       })
       .then(function (moduleData) {
         stopAnimatedProgress();
