@@ -414,8 +414,8 @@
         return loadScormTemplate();
       })
       .then(function () {
-        // Animate progress from 35% to 80% over ~30s during API call
-        startAnimatedProgress(35, 80, 30000, SmartRevizI18n.t("progressCallingAPI"));
+        // Asymptotic progress: starts fast, slows down, never stops until API responds
+        startAnimatedProgress(35, 98, 40000, SmartRevizI18n.t("progressCallingAPI"));
         return callClaudeAPI(extractedText, lang);
       })
       .then(function (moduleData) {
@@ -891,18 +891,17 @@
   function startAnimatedProgress(fromPercent, toPercent, durationMs, statusText) {
     showProgress(fromPercent, statusText);
     var startTime = Date.now();
+    // Asymptotic progress: moves fast at first, then slows down
+    // but NEVER stops — approaches toPercent without reaching it
     progressInterval = setInterval(function () {
       var elapsed = Date.now() - startTime;
-      var ratio = Math.min(elapsed / durationMs, 1);
-      // Ease-out curve for natural feel
-      var eased = 1 - Math.pow(1 - ratio, 3);
-      var current = Math.round(fromPercent + (toPercent - fromPercent) * eased);
+      // Use 1 - e^(-t/tau) curve: fast start, gradual slowdown, never plateaus
+      // tau calibrated so we reach ~75% of the range in durationMs
+      var tau = durationMs / 1.4;
+      var progress = 1 - Math.exp(-elapsed / tau);
+      var current = Math.round(fromPercent + (toPercent - fromPercent) * progress);
       showProgress(current, statusText);
-      if (ratio >= 1) {
-        clearInterval(progressInterval);
-        progressInterval = null;
-      }
-    }, 200);
+    }, 300);
   }
 
   function stopAnimatedProgress() {
