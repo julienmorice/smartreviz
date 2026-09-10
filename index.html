@@ -4,11 +4,76 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IMT-BS SmartReviz — Générateur de modules SCORM</title>
+  <link rel="preload" href="fonts/jakarta-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/dmsans-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- HERO HEADER -->
+  <!-- Jeu d'icônes — tracé unique, 1.75px, bouts arrondis, hérite de currentColor.
+       Les emoji d'origine ne formaient pas un ensemble cohérent et rendaient
+       différemment d'un système à l'autre. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <g id="ic" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></g>
+    </defs>
+    <symbol id="i-cap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="M5 10.5V15c0 1.7 3.1 3 7 3s7-1.3 7-3v-4.5"/>
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/>
+    </symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4.5 13.6 9 18 10.6 13.6 12.2 12 16.7 10.4 12.2 6 10.6 10.4 9 12 4.5Z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8Z"/>
+    </symbol>
+    <symbol id="i-summary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/><path d="M8.5 12.5h7M8.5 16h4.5"/>
+    </symbol>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 6.8C10.6 5.3 8.6 4.8 6.2 4.8H4v13h2.2c2.4 0 4.4.5 5.8 2 1.4-1.5 3.4-2 5.8-2H20v-13h-2.2c-2.4 0-4.4.5-5.8 2Z"/><path d="M12 6.8v13"/>
+    </symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9.8 14.2 14.2 9.8"/><path d="M10.8 7.6 12.4 6a3.7 3.7 0 0 1 5.2 5.2l-1.6 1.6"/><path d="M13.2 16.4 11.6 18a3.7 3.7 0 0 1-5.2-5.2l1.6-1.6"/>
+    </symbol>
+    <symbol id="i-cards" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="7.5" width="13" height="13" rx="2"/><path d="M8 7.5V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2.5"/>
+    </symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/><path d="m8.3 12.3 2.6 2.6 4.8-5.2"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m5 12.5 4.5 4.5L19 7"/>
+    </symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m9.5 5.5 6.5 6.5-6.5 6.5"/>
+    </symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14.5 5.5 8 12l6.5 6.5"/>
+    </symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m5.5 9.5 6.5 6.5 6.5-6.5"/>
+    </symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 15.5V3.5"/><path d="M7.5 8 12 3.5 16.5 8"/><path d="M4 16v2.5A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V16"/>
+    </symbol>
+    <symbol id="i-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20.5 7.9v8.2a1 1 0 0 1-.5.9l-7.5 4.1a1 1 0 0 1-1 0L4 17a1 1 0 0 1-.5-.9V7.9a1 1 0 0 1 .5-.9l7.5-4.1a1 1 0 0 1 1 0L20 7a1 1 0 0 1 .5.9Z"/><path d="m3.7 7.4 8.3 4.6 8.3-4.6"/><path d="M12 21.3V12"/>
+    </symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/><path d="M3.2 12h17.6"/><path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18Z"/>
+    </symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2.5 12S6.3 5.8 12 5.8 21.5 12 21.5 12 17.7 18.2 12 18.2 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>
+    </symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3.9 2.9 19.3a1 1 0 0 0 .9 1.5h16.4a1 1 0 0 0 .9-1.5L12 3.9Z"/><path d="M12 9.8v4.4"/><path d="M12 17.4h.01"/>
+    </symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"/>
+    </symbol>
+  </svg>
+
+  <!-- HERO -->
   <header class="hero">
     <div class="hero-inner">
       <div class="lang-switcher">
@@ -19,38 +84,38 @@
       <h1 class="hero-title">SmartReviz</h1>
       <p class="hero-subtitle" data-i18n="heroSubtitle">Transformez vos supports de cours en modules de révision interactifs — intégrables à Moodle en SCORM ou téléchargeables en HTML autonome.</p>
       <div class="hero-badges">
-        <span class="badge" data-i18n="badgeMoodle">&#127891; Compatible Moodle</span>
-        <span class="badge" data-i18n="badgeHTML">&#128196; Export HTML</span>
-        <span class="badge" data-i18n="badgeAI">&#129302; Généré par IA</span>
+        <span class="badge"><svg class="icon"><use href="#i-cap"/></svg><span data-i18n="badgeMoodle">Compatible Moodle</span></span>
+        <span class="badge"><svg class="icon"><use href="#i-file"/></svg><span data-i18n="badgeHTML">Export HTML</span></span>
+        <span class="badge"><svg class="icon"><use href="#i-spark"/></svg><span data-i18n="badgeAI">Généré par IA</span></span>
       </div>
     </div>
   </header>
 
-  <!-- WHAT IT GENERATES -->
+  <!-- LES 5 ACTIVITÉS PRODUITES -->
   <section class="features-strip">
     <div class="features-inner">
       <div class="feature-item">
-        <div class="feature-icon">&#128209;</div>
+        <div class="feature-icon"><svg class="icon"><use href="#i-summary"/></svg></div>
         <div class="feature-label" data-i18n="featResume">Résumé</div>
       </div>
-      <div class="feature-sep">&#8250;</div>
+      <div class="feature-sep"><svg class="icon"><use href="#i-chevron-right"/></svg></div>
       <div class="feature-item">
-        <div class="feature-icon">&#128218;</div>
+        <div class="feature-icon"><svg class="icon"><use href="#i-book"/></svg></div>
         <div class="feature-label" data-i18n="featGlossaire">Glossaire</div>
       </div>
-      <div class="feature-sep">&#8250;</div>
+      <div class="feature-sep"><svg class="icon"><use href="#i-chevron-right"/></svg></div>
       <div class="feature-item">
-        <div class="feature-icon">&#127919;</div>
+        <div class="feature-icon"><svg class="icon"><use href="#i-link"/></svg></div>
         <div class="feature-label" data-i18n="featMatching">Matching</div>
       </div>
-      <div class="feature-sep">&#8250;</div>
+      <div class="feature-sep"><svg class="icon"><use href="#i-chevron-right"/></svg></div>
       <div class="feature-item">
-        <div class="feature-icon">&#127183;</div>
+        <div class="feature-icon"><svg class="icon"><use href="#i-cards"/></svg></div>
         <div class="feature-label" data-i18n="featFlashcards">Flashcards</div>
       </div>
-      <div class="feature-sep">&#8250;</div>
+      <div class="feature-sep"><svg class="icon"><use href="#i-chevron-right"/></svg></div>
       <div class="feature-item">
-        <div class="feature-icon">&#9989;</div>
+        <div class="feature-icon"><svg class="icon"><use href="#i-check-circle"/></svg></div>
         <div class="feature-label" data-i18n="featQCM">QCM</div>
       </div>
     </div>
@@ -58,17 +123,16 @@
 
   <main class="container">
 
-    <!-- FORM CARD -->
+    <!-- FORMULAIRE -->
     <div class="card">
 
-      <!-- Step 1: Document Upload -->
       <div class="step">
         <div class="step-title">
           <span class="step-num">1</span>
           <span data-i18n="step1Title">Votre document de cours</span>
         </div>
         <div class="dropzone" id="dropzone">
-          <div class="dz-icon">&#128196;</div>
+          <div class="dz-icon"><svg class="icon"><use href="#i-upload"/></svg></div>
           <div class="dz-text" id="dzText" data-i18n="dzText">Glissez votre fichier ici ou cliquez</div>
           <div class="dz-formats" data-i18n="dzFormats">.txt &nbsp;·&nbsp; .md &nbsp;·&nbsp; .docx &nbsp;·&nbsp; .pdf</div>
           <div class="dz-limit" data-i18n="dzLimit">15 pages maximum recommandées</div>
@@ -84,7 +148,6 @@
 
       <div class="step-divider"></div>
 
-      <!-- Step 2: Options -->
       <div class="step">
         <div class="step-title">
           <span class="step-num">2</span>
@@ -97,23 +160,22 @@
         <div class="form-row">
           <label for="moduleLang" data-i18n="labelLang">Langue du module</label>
           <select id="moduleLang">
-            <option value="fr" data-i18n="langFR">&#127467;&#127479; Français</option>
-            <option value="en" data-i18n="langEN">&#127468;&#127463; Anglais</option>
+            <option value="fr" data-i18n="langFR">Français</option>
+            <option value="en" data-i18n="langEN">Anglais</option>
           </select>
         </div>
       </div>
 
-      <!-- Generate Button -->
       <div class="generate-container">
         <button class="btn-generate" id="btnGenerate">
-          <span class="btn-generate-icon">&#10024;</span>
+          <span class="btn-generate-icon"><svg class="icon"><use href="#i-spark"/></svg></span>
           <span data-i18n="btnGenerate">Générer le module</span>
         </button>
       </div>
 
-    </div><!-- end .card -->
+    </div><!-- /.card -->
 
-    <!-- Editor Panel -->
+    <!-- ÉDITEUR -->
     <div class="editor-panel" id="editorPanel">
       <div class="editor-header">
         <div class="step-title">
@@ -124,10 +186,18 @@
       </div>
 
       <div class="editor-tabs" id="editorTabs">
-        <button class="tab-btn active" data-tab="summary" data-i18n="tabSummary">&#128209; Résumé</button>
-        <button class="tab-btn" data-tab="glossary"><span data-i18n="tabGlossary">&#128218; Glossaire</span> <span class="tab-count" id="countGlossary"></span></button>
-        <button class="tab-btn" data-tab="flashcards"><span data-i18n="tabFlashcards">&#127183; Flashcards</span> <span class="tab-count" id="countFlashcards"></span></button>
-        <button class="tab-btn" data-tab="quiz"><span data-i18n="tabQuiz">&#9989; QCM</span> <span class="tab-count" id="countQuiz"></span></button>
+        <button class="tab-btn active" data-tab="summary">
+          <svg class="icon"><use href="#i-summary"/></svg><span data-i18n="tabSummary">Résumé</span>
+        </button>
+        <button class="tab-btn" data-tab="glossary">
+          <svg class="icon"><use href="#i-book"/></svg><span data-i18n="tabGlossary">Glossaire</span> <span class="tab-count" id="countGlossary"></span>
+        </button>
+        <button class="tab-btn" data-tab="flashcards">
+          <svg class="icon"><use href="#i-cards"/></svg><span data-i18n="tabFlashcards">Flashcards</span> <span class="tab-count" id="countFlashcards"></span>
+        </button>
+        <button class="tab-btn" data-tab="quiz">
+          <svg class="icon"><use href="#i-check-circle"/></svg><span data-i18n="tabQuiz">QCM</span> <span class="tab-count" id="countQuiz"></span>
+        </button>
       </div>
 
       <div class="tab-content active" id="tab-summary"></div>
@@ -136,13 +206,13 @@
       <div class="tab-content" id="tab-quiz"></div>
 
       <div class="editor-footer">
-        <button class="btn-validate-generate" id="btnValidateGenerate" data-i18n="btnValidate">
-          &#10024; Valider et générer le module
+        <button class="btn-validate-generate" id="btnValidateGenerate">
+          <svg class="icon"><use href="#i-spark"/></svg><span data-i18n="btnValidate">Valider et générer le module</span>
         </button>
       </div>
     </div>
 
-    <!-- Progress -->
+    <!-- PROGRESSION -->
     <div class="progress-panel" id="progressPanel">
       <h3 id="progressTitle" data-i18n="progressTitle">Génération en cours…</h3>
       <div class="progress-bar-track">
@@ -154,33 +224,36 @@
       </div>
     </div>
 
-    <!-- Error -->
+    <!-- ERREUR -->
     <div class="error-panel" id="errorPanel">
-      <strong data-i18n="errorLabel">&#9888; Erreur</strong>
-      <span id="errorMessage"></span>
+      <svg class="icon"><use href="#i-alert"/></svg>
+      <div>
+        <strong data-i18n="errorLabel">Erreur</strong>
+        <span id="errorMessage"></span>
+      </div>
     </div>
 
-    <!-- Result -->
+    <!-- RÉSULTAT -->
     <div class="result-panel" id="resultPanel">
-      <div class="result-check">&#10003;</div>
+      <div class="result-check"><svg class="icon"><use href="#i-check"/></svg></div>
       <h3 data-i18n="resultTitle">Module prêt !</h3>
       <p class="result-hint" data-i18n="resultHint">Choisissez votre format de téléchargement</p>
       <div class="result-buttons">
-        <button class="btn-download" id="btnDownload" data-i18n="btnSCORM">
-          <span>&#128230;</span> SCORM pour Moodle
+        <button class="btn-download" id="btnDownload">
+          <svg class="icon"><use href="#i-package"/></svg><span data-i18n="btnSCORM">SCORM pour Moodle</span>
         </button>
-        <button class="btn-download-html" id="btnDownloadHTML" data-i18n="btnHTML">
-          <span>&#127758;</span> HTML autonome
+        <button class="btn-download-html" id="btnDownloadHTML">
+          <svg class="icon"><use href="#i-globe"/></svg><span data-i18n="btnHTML">HTML autonome</span>
         </button>
-        <button class="btn-preview" id="btnPreview" data-i18n="btnPreview">
-          <span>&#128065;</span> Prévisualiser
+        <button class="btn-preview" id="btnPreview">
+          <svg class="icon"><use href="#i-eye"/></svg><span data-i18n="btnPreview">Prévisualiser</span>
         </button>
       </div>
     </div>
 
   </main>
 
-  <!-- VIDEO SECTION -->
+  <!-- VIDÉO -->
   <section class="video-section">
     <div class="video-inner">
       <h2 class="video-title" data-i18n="videoTitle">Voir SmartReviz en action</h2>
@@ -198,7 +271,7 @@
     </div>
   </section>
 
-  <!-- CAROUSEL SHOWCASE -->
+  <!-- CARROUSEL -->
   <section class="showcase">
     <div class="showcase-inner">
       <h2 class="showcase-title" data-i18n="carouselTitle">Aperçu du module généré</h2>
@@ -228,8 +301,8 @@
           </div>
         </div>
 
-        <button class="carousel-btn prev" id="carouselPrev" data-i18n-aria="carouselPrevLabel" aria-label="Précédent">&#8249;</button>
-        <button class="carousel-btn next" id="carouselNext" data-i18n-aria="carouselNextLabel" aria-label="Suivant">&#8250;</button>
+        <button class="carousel-btn prev" id="carouselPrev" data-i18n-aria="carouselPrevLabel" aria-label="Précédent"><svg class="icon"><use href="#i-chevron-left"/></svg></button>
+        <button class="carousel-btn next" id="carouselNext" data-i18n-aria="carouselNextLabel" aria-label="Suivant"><svg class="icon"><use href="#i-chevron-right"/></svg></button>
       </div>
 
       <div class="carousel-dots" id="carouselDots">
@@ -257,7 +330,7 @@
   <script src="lib/pdf.min.js"></script>
   <script src="lib/marked.min.js"></script>
   <script src="i18n.js"></script>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
   <script>
     // Language switcher
     document.querySelectorAll('.lang-btn').forEach(function(btn) {

@@ -9,9 +9,9 @@
 
       // Hero
       heroSubtitle: "Transformez vos supports de cours en modules de révision interactifs — intégrables à Moodle en SCORM ou téléchargeables en HTML autonome.",
-      badgeMoodle: "&#127891; Compatible Moodle",
-      badgeHTML: "&#128196; Export HTML",
-      badgeAI: "&#129302; Généré par IA",
+      badgeMoodle: "Compatible Moodle",
+      badgeHTML: "Export HTML",
+      badgeAI: "Généré par IA",
 
       // Features strip
       featResume: "Résumé",
@@ -33,8 +33,8 @@
       labelTitle: "Titre du module",
       titlePlaceholder: "Ex : Éthique de l'IA en santé",
       labelLang: "Langue du module",
-      langFR: "&#127467;&#127479; Français",
-      langEN: "&#127468;&#127463; Anglais",
+      langFR: "Français",
+      langEN: "Anglais",
 
       // Generate
       btnGenerate: "Générer le module",
@@ -42,11 +42,11 @@
       // Editor
       step3Title: "Vérifiez et modifiez le contenu généré",
       editorSubtitle: "Corrigez les éventuelles erreurs de l'IA avant de générer votre module.",
-      tabSummary: "&#128209; Résumé",
-      tabGlossary: "&#128218; Glossaire",
-      tabFlashcards: "&#127183; Flashcards",
-      tabQuiz: "&#9989; QCM",
-      btnValidate: "&#10024; Valider et générer le module",
+      tabSummary: "Résumé",
+      tabGlossary: "Glossaire",
+      tabFlashcards: "Flashcards",
+      tabQuiz: "QCM",
+      btnValidate: "Valider et générer le module",
 
       // Editor labels
       edOverview: "Vue d'ensemble",
@@ -73,7 +73,7 @@
       labelCorrectAnswer: "Bonne réponse :",
       labelExplanation: "Explication",
       placeholderExplanation: "Explication de la bonne réponse",
-      btnDeleteQuestion: "&#128465; Supprimer",
+      btnDeleteQuestion: "Supprimer",
       questionPlaceholder: "Question…",
       deleteTooltip: "Supprimer",
       deleteChapterTooltip: "Supprimer le chapitre",
@@ -95,14 +95,14 @@
       progressDone: "Terminé !",
 
       // Error
-      errorLabel: "&#9888; Erreur",
+      errorLabel: "Erreur",
 
       // Result
       resultTitle: "Module prêt !",
       resultHint: "Choisissez votre format de téléchargement",
-      btnSCORM: "&#128230; SCORM pour Moodle",
-      btnHTML: "&#127758; HTML autonome",
-      btnPreview: "&#128065; Prévisualiser",
+      btnSCORM: "SCORM pour Moodle",
+      btnHTML: "HTML autonome",
+      btnPreview: "Prévisualiser",
 
       // Video section
       videoTitle: "Voir SmartReviz en action",
@@ -149,9 +149,9 @@
 
       // Hero
       heroSubtitle: "Turn your course materials into interactive revision modules — ready for Moodle as SCORM or downloadable as standalone HTML.",
-      badgeMoodle: "&#127891; Moodle Compatible",
-      badgeHTML: "&#128196; HTML Export",
-      badgeAI: "&#129302; AI Generated",
+      badgeMoodle: "Moodle Compatible",
+      badgeHTML: "HTML Export",
+      badgeAI: "AI Generated",
 
       // Features strip
       featResume: "Summary",
@@ -173,8 +173,8 @@
       labelTitle: "Module title",
       titlePlaceholder: "E.g.: Ethics of AI in Healthcare",
       labelLang: "Module language",
-      langFR: "&#127467;&#127479; French",
-      langEN: "&#127468;&#127463; English",
+      langFR: "French",
+      langEN: "English",
 
       // Generate
       btnGenerate: "Generate module",
@@ -182,11 +182,11 @@
       // Editor
       step3Title: "Review and edit the generated content",
       editorSubtitle: "Fix any AI errors before generating your module.",
-      tabSummary: "&#128209; Summary",
-      tabGlossary: "&#128218; Glossary",
-      tabFlashcards: "&#127183; Flashcards",
-      tabQuiz: "&#9989; Quiz",
-      btnValidate: "&#10024; Validate and generate module",
+      tabSummary: "Summary",
+      tabGlossary: "Glossary",
+      tabFlashcards: "Flashcards",
+      tabQuiz: "Quiz",
+      btnValidate: "Validate and generate module",
 
       // Editor labels
       edOverview: "Overview",
@@ -213,7 +213,7 @@
       labelCorrectAnswer: "Correct answer:",
       labelExplanation: "Explanation",
       placeholderExplanation: "Explanation of the correct answer",
-      btnDeleteQuestion: "&#128465; Delete",
+      btnDeleteQuestion: "Delete",
       questionPlaceholder: "Question…",
       deleteTooltip: "Delete",
       deleteChapterTooltip: "Delete chapter",
@@ -235,14 +235,14 @@
       progressDone: "Done!",
 
       // Error
-      errorLabel: "&#9888; Error",
+      errorLabel: "Error",
 
       // Result
       resultTitle: "Module ready!",
       resultHint: "Choose your download format",
-      btnSCORM: "&#128230; SCORM for Moodle",
-      btnHTML: "&#127758; Standalone HTML",
-      btnPreview: "&#128065; Preview",
+      btnSCORM: "SCORM for Moodle",
+      btnHTML: "Standalone HTML",
+      btnPreview: "Preview",
 
       // Video section
       videoTitle: "See SmartReviz in action",

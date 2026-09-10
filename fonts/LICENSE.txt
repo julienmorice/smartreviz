@@ -1,0 +1,4 @@
+Plus Jakarta Sans et DM Sans — SIL Open Font License 1.1
+https://scripts.sil.org/OFL
+Sous-ensembles latin et latin-ext, format woff2, recuperes depuis Google Fonts.
+Embarques dans le paquet SCORM pour eviter toute requete externe depuis Moodle.

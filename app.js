@@ -617,6 +617,19 @@
     });
   }
 
+  // Polices de la charte PracTice, embarquées dans le module. Elles voyagent
+  // avec le paquet plutôt que d'être appelées chez Google : un module déposé
+  // dans Moodle doit s'afficher correctement hors ligne, et aucune requête ne
+  // doit partir vers un tiers depuis le navigateur de l'étudiant.
+  var FONT_FILES = [
+    "jakarta-latin.woff2",
+    "jakarta-latin-ext.woff2",
+    "dmsans-latin.woff2",
+    "dmsans-latin-ext.woff2",
+  ];
+
+  var scormFontCache = {}; // nom -> ArrayBuffer
+
   // --- Load SCORM Template Files ---
   function loadScormTemplate() {
     var files = [
@@ -636,7 +649,42 @@
         });
     });
 
+    promises = promises.concat(
+      FONT_FILES.map(function (nom) {
+        return fetch("scorm-template/fonts/" + nom)
+          .then(function (r) {
+            return r.arrayBuffer();
+          })
+          .then(function (buf) {
+            scormFontCache[nom] = buf;
+          });
+      })
+    );
+
     return Promise.all(promises);
+  }
+
+  function arrayBufferEnBase64(buffer) {
+    var octets = new Uint8Array(buffer);
+    var binaire = "";
+    // Par tranches : String.fromCharCode sur 40 000 octets d'un coup dépasse la
+    // taille d'appel maximale sur certains navigateurs.
+    for (var i = 0; i < octets.length; i += 8192) {
+      binaire += String.fromCharCode.apply(null, octets.subarray(i, i + 8192));
+    }
+    return btoa(binaire);
+  }
+
+  // Remplace les url('fonts/…woff2') par des data: URI, pour l'export HTML
+  // autonome où il n'y a pas de dossier fonts/ à côté du fichier.
+  function inlinerPolices(css) {
+    FONT_FILES.forEach(function (nom) {
+      var buf = scormFontCache[nom];
+      if (!buf) return;
+      var dataURI = "data:font/woff2;base64," + arrayBufferEnBase64(buf);
+      css = css.split("url('fonts/" + nom + "')").join("url(" + dataURI + ")");
+    });
+    return css;
   }
 
   // --- Build SCORM Package ---
@@ -670,6 +718,9 @@
       '      <file href="scorm-api.js"/>\n' +
       '      <file href="module-data.js"/>\n' +
       '      <file href="style.css"/>\n' +
+      FONT_FILES.map(function (nom) {
+        return '      <file href="fonts/' + nom + '"/>\n';
+      }).join("") +
       "    </resource>\n" +
       "  </resources>\n" +
       "</manifest>";
@@ -684,6 +735,10 @@
     zip.file("index.html", scormTemplateCache["index.html"]);
     zip.file("style.css", scormTemplateCache["style.css"]);
     zip.file("scorm-api.js", scormTemplateCache["scorm-api.js"]);
+
+    FONT_FILES.forEach(function (nom) {
+      if (scormFontCache[nom]) zip.file("fonts/" + nom, scormFontCache[nom]);
+    });
 
     return zip.generateAsync({ type: "blob" });
   }
@@ -706,7 +761,7 @@
     // Inline CSS
     html = html.replace(
       '<link rel="stylesheet" href="style.css">',
-      "<style>" + scormTemplateCache["style.css"] + "</style>"
+      "<style>" + inlinerPolices(scormTemplateCache["style.css"]) + "</style>"
     );
     return html;
   }
@@ -906,7 +961,7 @@
   function keypointRow(value, idx) {
     return '<div class="keypoint-row" data-idx="' + idx + '">' +
       '<input type="text" class="kp-input" value="' + esc(value) + '" placeholder="' + esc(SmartRevizI18n.t("placeholderKeypoint")) + '">' +
-      '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteTooltip")) + '">&#215;</button>' +
+      '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteTooltip")) + '"><svg class="icon"><use href="#i-x"/></svg></button>' +
     '</div>';
   }
 
@@ -914,7 +969,7 @@
     var html = '<div class="chapter-block" data-ci="' + ci + '">';
     html += '<div class="chapter-block-header">';
     html += '<input type="text" class="ch-title" value="' + esc(ch.title || "") + '" placeholder="' + esc(SmartRevizI18n.t("placeholderChapterTitle")) + '">';
-    html += '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteChapterTooltip")) + '">&#215;</button>';
+    html += '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteChapterTooltip")) + '"><svg class="icon"><use href="#i-x"/></svg></button>';
     html += '</div>';
     html += '<div class="chapter-sections" data-ci="' + ci + '">';
     (ch.sections || []).forEach(function(sec, si) {
@@ -932,7 +987,7 @@
         '<input type="text" class="sec-title" value="' + esc(sec.title || "") + '" placeholder="' + esc(SmartRevizI18n.t("placeholderSectionTitle")) + '">' +
         '<textarea class="sec-content" rows="6">' + esc(sec.content || "") + '</textarea>' +
       '</div>' +
-      '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteSectionTooltip")) + '">&#215;</button>' +
+      '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteSectionTooltip")) + '"><svg class="icon"><use href="#i-x"/></svg></button>' +
     '</div>';
   }
 
@@ -990,7 +1045,7 @@
         '<input type="text" class="gloss-term" value="' + esc(item.term || "") + '" placeholder="' + esc(SmartRevizI18n.t("placeholderTerm")) + '">' +
         '<textarea class="gloss-def" rows="2">' + esc(item.definition || "") + '</textarea>' +
       '</div>' +
-      '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteTooltip")) + '">&#215;</button>' +
+      '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteTooltip")) + '"><svg class="icon"><use href="#i-x"/></svg></button>' +
     '</div>';
   }
 
@@ -1032,7 +1087,7 @@
         '<input type="text" class="fc-front" value="' + esc(fc.front || "") + '" placeholder="' + esc(SmartRevizI18n.t("placeholderFront")) + '">' +
         '<textarea class="fc-back" rows="2">' + esc(fc.back || "") + '</textarea>' +
       '</div>' +
-      '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteTooltip")) + '">&#215;</button>' +
+      '<button class="btn-row-delete" title="' + esc(SmartRevizI18n.t("deleteTooltip")) + '"><svg class="icon"><use href="#i-x"/></svg></button>' +
     '</div>';
   }
 
@@ -1094,7 +1149,7 @@
     html += '<div class="quiz-editor-header">';
     html += '<span class="quiz-editor-num">' + (i + 1) + '</span>';
     html += '<span class="quiz-editor-preview">' + esc(q.question || SmartRevizI18n.t("questionPlaceholder")) + '</span>';
-    html += '<span class="quiz-editor-toggle">&#9660;</span>';
+    html += '<span class="quiz-editor-toggle"><svg class="icon"><use href="#i-chevron-down"/></svg></span>';
     html += '</div>';
     html += '<div class="quiz-editor-body">';
     html += '<textarea class="quiz-q-input" rows="2" placeholder="' + esc(SmartRevizI18n.t("placeholderQuestionText")) + '" style="margin-top:10px">' + esc(q.question || "") + '</textarea>';

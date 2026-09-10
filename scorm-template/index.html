@@ -8,6 +8,19 @@
 </head>
 <body>
 
+  <!-- Jeu d'icônes du module — tracé unique, hérite de currentColor. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m5 12.5 4.5 4.5L19 7"/>
+    </symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14.5 5.5 8 12l6.5 6.5"/>
+    </symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m9.5 5.5 6.5 6.5-6.5 6.5"/>
+    </symbol>
+  </svg>
+
   <!-- Progress Bar — now 5 steps -->
   <nav class="progress-bar" id="progressBar">
     <div class="progress-step active" data-step="1">
@@ -96,9 +109,9 @@
       </div>
     </div>
     <div class="flashcard-nav">
-      <button id="btnPrevCard" disabled>&#9664;</button>
+      <button id="btnPrevCard" disabled aria-label="Carte précédente"><svg class="icon"><use href="#i-chevron-left"/></svg></button>
       <span class="flashcard-counter" id="cardCounter">1/10</span>
-      <button id="btnNextCard">&#9654;</button>
+      <button id="btnNextCard" aria-label="Carte suivante"><svg class="icon"><use href="#i-chevron-right"/></svg></button>
     </div>
     <div class="btn-container">
       <button class="btn btn-primary" id="btnToQuiz" disabled>Continuer vers le QCM</button>
@@ -117,7 +130,7 @@
   <!-- Section 6: Completion -->
   <div class="section" id="section-complete">
     <div class="completion-screen">
-      <div class="check-icon">&#10003;</div>
+      <div class="check-icon"><svg class="icon"><use href="#i-check"/></svg></div>
       <h1 id="completeTitle">Module terminé !</h1>
       <p id="completeMessage">Vous avez complété l'ensemble du module de révision.</p>
     </div>
@@ -282,7 +295,9 @@
       data.glossary.forEach(function(item) {
         glossaryHTML += '<div class="glossary-item">';
         glossaryHTML += '<div class="glossary-term">' + escapeHTML(item.term) + '</div>';
-        glossaryHTML += '<div class="glossary-definition">' + escapeHTML(item.definition) + '</div>';
+        // L'enveloppe interne permet d'animer l'ouverture via grid-template-rows
+        // plutôt qu'un max-height, qui tronquait les définitions longues.
+        glossaryHTML += '<div class="glossary-definition"><div class="glossary-definition-inner">' + escapeHTML(item.definition) + '</div></div>';
         glossaryHTML += '</div>';
       });
     }
@@ -842,11 +857,15 @@
       var connectors = document.querySelectorAll(".progress-connector");
       steps.forEach(function(step, i) {
         step.classList.remove("active", "done");
+        var icone = step.querySelector(".step-icon");
         if (i + 1 < num) {
           step.classList.add("done");
-          step.querySelector(".step-icon").innerHTML = "&#10003;";
-        } else if (i + 1 === num && num <= 5) {
-          step.classList.add("active");
+          icone.innerHTML = '<svg class="icon"><use href="#i-check"/></svg>';
+        } else {
+          // Rétablit le numéro : sans cela une étape repassée en arrière
+          // garderait la coche.
+          icone.textContent = String(i + 1);
+          if (i + 1 === num && num <= 5) step.classList.add("active");
         }
       });
       connectors.forEach(function(conn, i) {
