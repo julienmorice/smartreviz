@@ -1,0 +1,23 @@
+# SmartReviz — Proxy Cloudflare Worker
+#
+# Déploiement :
+#   cd smartreviz/proxy
+#   npx wrangler deploy
+#
+# Secrets (NE PAS mettre dans ce fichier — jamais commités) :
+#   npx wrangler secret put ILAAS_API_KEY
+#   # plus tard, si ajout d'un 2e moteur :
+#   npx wrangler secret put OPENROUTER_API_KEY
+
+name = "smartreviz-proxy"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+[vars]
+# Moteur souverain ILAAS (compatible OpenAI) — https://www.ilaas.fr
+ILAAS_BASE  = "https://llm.ilaas.fr/v1"
+ILAAS_MODEL = "mistral-small-4-119b"
+
+# Moteur public (optionnel, décommenter pour activer) :
+# OPENROUTER_BASE  = "https://openrouter.ai/api/v1"
+# OPENROUTER_MODEL = "z-ai/glm-5"

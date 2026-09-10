@@ -170,40 +170,159 @@
     });
   }
 
-  // --- Claude API Call (via proxy Cloudflare Worker) ---
-  function callClaudeAPI(text, language) {
-    var langLabel = language === "fr" ? "Français" : "English";
+  // --- LLM API Call (via proxy Cloudflare Worker → moteur souverain ILAAS) ---
+  // Réassemble un flux SSE (Server-Sent Events) en une seule chaîne de texte.
+  // Le proxy relaie le flux du modèle tel quel plutôt que de le recoller
+  // lui-même : le plan Cloudflare Workers gratuit plafonne à 10 ms de CPU, très
+  // en deçà de ce que coûte le parsing de plusieurs milliers de fragments.
+  // Côté navigateur, ce plafond n'existe pas. Voir proxy/worker.js.
+  function readSSEStream(response, onProgress) {
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder("utf-8");
+    var buffer = "";
+    var text = "";
+    var finishReason = null;
 
-    var systemPrompt =
-      "Tu es un assistant pédagogique spécialisé dans la création de modules de révision.\n" +
-      "À partir du contenu de cours fourni, tu DOIS générer un objet JSON contenant EXACTEMENT ces 4 clés :\n\n" +
-      '1. "summary" : un objet avec 3 clés :\n' +
+    function handleBlock(block) {
+      var lines = block.split("\n");
+      for (var i = 0; i < lines.length; i++) {
+        if (lines[i].indexOf("data:") !== 0) continue;
+        var payload = lines[i].slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        var chunk;
+        try {
+          chunk = JSON.parse(payload);
+        } catch (e) {
+          continue; // fragment illisible : on l'ignore plutôt que tout perdre
+        }
+        var choice = chunk.choices && chunk.choices[0];
+        if (!choice) continue;
+        var piece = choice.delta && choice.delta.content;
+        if (typeof piece === "string") text += piece;
+        if (choice.finish_reason) finishReason = choice.finish_reason;
+      }
+    }
+
+    // Les événements SSE sont séparés par une ligne vide ; on ne traite que les
+    // blocs complets et on garde le reliquat pour le tour suivant.
+    function absorb(part) {
+      buffer += part;
+      var blocks = buffer.split(/\r?\n\r?\n/);
+      buffer = blocks.pop();
+      for (var i = 0; i < blocks.length; i++) handleBlock(blocks[i]);
+    }
+
+    function pump() {
+      return reader.read().then(function (r) {
+        if (r.done) {
+          absorb(decoder.decode());
+          // Dernier événement non suivi d'une ligne vide : sans ce rattrapage,
+          // la fin de la génération serait perdue.
+          if (buffer) {
+            handleBlock(buffer);
+            buffer = "";
+          }
+          return { text: text, finishReason: finishReason };
+        }
+        absorb(decoder.decode(r.value, { stream: true }));
+        if (onProgress) onProgress(text.length);
+        return pump();
+      });
+    }
+
+    return pump();
+  }
+
+  var ALL_SECTIONS = ["summary", "glossary", "flashcards", "quiz"];
+
+  // Chaque section est décrite isolément afin de pouvoir n'en redemander qu'une
+  // partie. Le modèle omet parfois une section entière d'une génération complète ;
+  // la redemander seule produit une sortie bien plus courte, donc nettement plus
+  // fiable, et en quelques secondes au lieu de rejouer les 35 s de génération.
+  var SECTION_SPECS = {
+    summary:
+      '"summary" : un objet avec 3 clés :\n' +
       '   - "overview" : string — un paragraphe de synthèse complet (6 à 8 phrases) couvrant l\'ensemble du document : contexte, enjeux principaux, structure du cours et apports clés. Rédigé en prose fluide, sans liste ni bullet point.\n' +
       '   - "keyPoints" : tableau de 4 à 6 strings — les points clés essentiels du cours. Chaque point est une phrase complète et autonome (sujet + verbe + complément), qui apporte une information substantielle, pas un simple titre de rubrique.\n' +
       '   - "chapters" : tableau de 4 à 8 chapitres thématiques couvrant l\'ensemble du document. Chaque chapitre a :\n' +
       '       * "title" : string — titre thématique clair du chapitre\n' +
       '       * "sections" : tableau de 1 à 3 objets, chacun avec :\n' +
       '           - "title" : string — sous-titre de la section\n' +
-      '           - "content" : string — paragraphe rédigé de 4 à 6 phrases complètes expliquant en détail le contenu de cette section. Ce contenu doit être informatif, précis, et rédigé en prose continue (pas de listes, pas de mots-clés isolés). Il doit mentionner des faits, chiffres, noms ou exemples concrets tirés du document source.\n\n' +
-      '2. "glossary" : tableau de 10 à 15 objets, chacun avec "term" (string) et "definition" (string — définition complète en 2-3 phrases).\n\n' +
-      '3. "flashcards" : tableau de EXACTEMENT 10 objets. Chaque objet a "type" ("concept" ou "question"), "front" (string) et "back" (string — réponse développée en 2-3 phrases). Mélange les deux types.\n\n' +
-      '4. "quiz" : tableau de EXACTEMENT 10 objets. Chaque objet a :\n' +
+      '           - "content" : string — paragraphe rédigé de 4 à 6 phrases complètes expliquant en détail le contenu de cette section. Ce contenu doit être informatif, précis, et rédigé en prose continue (pas de listes, pas de mots-clés isolés). Il doit mentionner des faits, chiffres, noms ou exemples concrets tirés du document source.',
+    glossary:
+      '"glossary" : tableau de 10 à 15 objets, chacun avec "term" (string) et "definition" (string — définition complète en 2-3 phrases).',
+    flashcards:
+      '"flashcards" : tableau de EXACTEMENT 10 objets. Chaque objet a "type" ("concept" ou "question"), "front" (string) et "back" (string — réponse développée en 2-3 phrases). Mélange les deux types.',
+    quiz:
+      '"quiz" : tableau de EXACTEMENT 10 objets. Chaque objet a :\n' +
       '   - "question" : string (l\'énoncé)\n' +
       '   - "choices" : tableau de exactement 4 strings\n' +
       '   - "correct" : integer (0, 1, 2 ou 3 — index de la bonne réponse)\n' +
-      '   - "explanation" : string (explication de 2-3 phrases justifiant la bonne réponse)\n\n' +
-      "Langue de sortie : " + langLabel + "\n\n" +
-      "Règles STRICTES :\n" +
-      "- Tu DOIS inclure les 4 sections : summary, glossary, flashcards ET quiz\n" +
-      "- flashcards : EXACTEMENT 10 cartes, ni plus ni moins\n" +
-      "- quiz : EXACTEMENT 10 questions, ni plus ni moins\n" +
-      "- INTERDIT dans le résumé : listes à puces, tirets, mots-clés isolés, phrases incomplètes. Uniquement de la prose rédigée.\n" +
-      "- Chaque section du résumé doit être substantielle : mentionner des informations précises (noms, dates, chiffres, exemples) tirées du document source\n" +
-      "- Les questions doivent tester la compréhension, pas la mémorisation de détails\n" +
-      "- Les distracteurs (mauvaises réponses) doivent être plausibles\n" +
-      "- Les flashcards doivent couvrir les concepts fondamentaux\n" +
-      "- Le glossaire doit contenir les termes techniques essentiels avec des définitions complètes\n\n" +
-      "IMPORTANT : Réponds UNIQUEMENT avec l'objet JSON brut. Pas de ```json, pas de commentaire, pas de texte avant ou après. Juste le JSON.";
+      '   - "explanation" : string (explication de 2-3 phrases justifiant la bonne réponse)',
+  };
+
+  var SECTION_RULES = {
+    summary: [
+      "- summary.chapters : entre 4 et 8 chapitres, JAMAIS moins de 4. Ils doivent couvrir " +
+        "l'intégralité du document, du début à la fin — pas seulement ses premières pages.",
+      "- INTERDIT dans le résumé : listes à puces, tirets, mots-clés isolés, phrases incomplètes. Uniquement de la prose rédigée.",
+      "- Chaque section du résumé doit être substantielle : mentionner des informations précises (noms, dates, chiffres, exemples) tirées du document source",
+    ],
+    glossary: [
+      "- glossary : entre 10 et 15 termes. JAMAIS plus de 15.",
+      "- Le glossaire doit contenir les termes techniques essentiels avec des définitions complètes",
+    ],
+    flashcards: [
+      "- flashcards : EXACTEMENT 10 cartes, ni plus ni moins",
+      "- Les flashcards doivent couvrir les concepts fondamentaux",
+    ],
+    quiz: [
+      "- quiz : EXACTEMENT 10 questions, ni plus ni moins",
+      "- Les questions doivent tester la compréhension, pas la mémorisation de détails",
+      "- Les distracteurs (mauvaises réponses) doivent être plausibles",
+    ],
+  };
+
+  function buildSystemPrompt(language, sections) {
+    var langLabel = language === "fr" ? "Français" : "English";
+    var partiel = sections.length < ALL_SECTIONS.length;
+
+    var prompt =
+      "Tu es un assistant pédagogique spécialisé dans la création de modules de révision.\n";
+    prompt += partiel
+      ? "Une première génération a échoué sur une partie du module. À partir du contenu de " +
+        "cours fourni, tu DOIS produire un objet JSON contenant UNIQUEMENT " +
+        (sections.length > 1 ? "ces " + sections.length + " clés" : "cette clé") +
+        " :\n\n"
+      : "À partir du contenu de cours fourni, tu DOIS générer un objet JSON contenant EXACTEMENT ces 4 clés :\n\n";
+
+    for (var i = 0; i < sections.length; i++) {
+      prompt += i + 1 + ". " + SECTION_SPECS[sections[i]] + "\n\n";
+    }
+
+    prompt += "Langue de sortie : " + langLabel + "\n\nRègles STRICTES :\n";
+    prompt +=
+      "- Tu DOIS inclure " +
+      (partiel ? "la totalité des clés demandées ci-dessus" : "les 4 sections : summary, glossary, flashcards ET quiz") +
+      "\n";
+    for (var j = 0; j < sections.length; j++) {
+      var regles = SECTION_RULES[sections[j]];
+      for (var k = 0; k < regles.length; k++) prompt += regles[k] + "\n";
+    }
+    prompt +=
+      "- Compte tes éléments avant de répondre. Dépasser ces nombres rend la réponse " +
+      "inutilisable : la sortie est coupée avant la fin et tout le travail est perdu.\n" +
+      "- Reste concis dans les définitions et explications : va à l'essentiel plutôt " +
+      "que de multiplier les reformulations.\n\n" +
+      "IMPORTANT : Réponds UNIQUEMENT avec l'objet JSON brut. Pas de ```json, pas de " +
+      "commentaire, pas de texte avant ou après. Juste le JSON.";
+
+    return prompt;
+  }
+
+  function callLLMAPI(text, language, sections) {
+    sections = sections || ALL_SECTIONS;
+    var systemPrompt = buildSystemPrompt(language, sections);
 
     // Truncate if necessary (~60K chars ≈ ~15 pages, fits within Cloudflare 100s timeout)
     var maxChars = 60000;
@@ -218,8 +337,13 @@
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 8192,
+        // 16384 et non 8192 : sur un document volumineux la génération atteignait
+        // le plafond, coupant le JSON en plein milieu (donc inexploitable). Le
+        // modèle s'arrête de lui-même vers 7 500-8 000 tokens : cette marge ne
+        // coûte rien, elle évite seulement la troncature.
+        max_tokens: 16384,
+        temperature: 0.4,
+        response_format: { type: "json_object" },
         messages: [
           {
             role: "user",
@@ -234,54 +358,263 @@
       }),
     })
       .then(function (response) {
-        return response.text().then(function (text) {
+        var contentType = response.headers.get("Content-Type") || "";
+
+        // Cas nominal : le proxy relaie le flux du modèle, on le recolle ici.
+        if (response.ok && contentType.indexOf("text/event-stream") !== -1) {
+          return readSSEStream(response).then(function (result) {
+            if (!result.text) {
+              var vide = new Error(SmartRevizI18n.t("errBadJSON"));
+              vide.retryable = true;
+              throw vide;
+            }
+            // Génération coupée au plafond de tokens : le JSON s'arrête en plein
+            // milieu. Une relance a de bonnes chances d'être plus compacte.
+            if (result.finishReason === "length") {
+              var coupe = new Error(SmartRevizI18n.t("errBadJSON"));
+              coupe.retryable = true;
+              throw coupe;
+            }
+            return result.text;
+          });
+        }
+
+        // Sinon : le proxy a renvoyé une erreur (ou une réponse non-streamée).
+        return response.text().then(function (body) {
           var data;
           try {
-            data = JSON.parse(text);
+            data = JSON.parse(body);
           } catch (e) {
-            if (response.status === 524) {
+            if (response.status === 524 || response.status === 504) {
               throw new Error(SmartRevizI18n.t("errTimeout"));
             }
-            throw new Error("API Error (" + response.status + "): " + text.substring(0, 200));
+            // Cloudflare renvoie une page HTML quand le Worker dépasse ses
+            // limites : inutile de l'afficher telle quelle à l'enseignant.
+            if (/worker exceeded|<!DOCTYPE|<html/i.test(body)) {
+              var surcharge = new Error(SmartRevizI18n.t("errTimeout"));
+              surcharge.retryable = true;
+              throw surcharge;
+            }
+            throw new Error("API Error (" + response.status + "): " + body.substring(0, 200));
           }
-          if (!response.ok) {
-            throw new Error(
-              data.error
-                ? data.error.message
-                : "API Error (" + response.status + ")"
-            );
+          if (!response.ok || data.error) {
+            var msg = data.error ? (data.error.message || data.error) : "API Error (" + response.status + ")";
+            // « Time-out » avec un tiret : c'est la formulation de la passerelle
+            // ILAAS, que /timeout/ seul ne reconnaissait pas — l'enseignant se
+            // retrouvait alors avec du HTML brut à l'écran.
+            if (msg === "TIMEOUT" || /time-?out|timed out|gateway/i.test(msg)) {
+              throw new Error(SmartRevizI18n.t("errTimeout"));
+            }
+            // Réponse coupée au plafond de tokens : une relance a de bonnes
+            // chances de produire une sortie plus compacte.
+            if (/^TRUNCATED/.test(msg)) {
+              var truncated = new Error(SmartRevizI18n.t("errBadJSON"));
+              truncated.retryable = true;
+              throw truncated;
+            }
+            throw new Error(msg);
           }
-          return data;
+          return data.content[0].text || "";
         });
       })
-      .then(function (data) {
-        var content = data.content[0].text;
-        // Remove potential markdown code block wrapping
-        content = content.replace(/^```json?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
-        var parsed = JSON.parse(content);
+      .then(function (content) {
+        // Nettoyage : retire un éventuel wrapper markdown ```json ... ```
+        content = content.replace(/^```json?\s*\n?/i, "").replace(/\n?```\s*$/, "").trim();
+        var parsed;
+        try {
+          parsed = JSON.parse(content);
+        } catch (e) {
+          // Repêchage : extrait le plus grand bloc { ... } du texte
+          var first = content.indexOf("{");
+          var last = content.lastIndexOf("}");
+          if (first !== -1 && last > first) {
+            try {
+              parsed = JSON.parse(content.slice(first, last + 1));
+            } catch (e2) {
+              /* laisse remonter l'erreur ci-dessous */
+            }
+          }
+          if (!parsed) {
+            var badJson = new Error(SmartRevizI18n.t("errBadJSON"));
+            badJson.retryable = true;
+            throw badJson;
+          }
+        }
 
-        // Validate required sections exist
-        if (!parsed.summary || !parsed.summary.chapters || !Array.isArray(parsed.summary.chapters)) {
-          throw new Error(SmartRevizI18n.t("errSummary"));
-        }
-        if (!parsed.glossary || !Array.isArray(parsed.glossary) || parsed.glossary.length === 0) {
-          throw new Error(SmartRevizI18n.t("errGlossary"));
-        }
-        if (!parsed.flashcards || !Array.isArray(parsed.flashcards) || parsed.flashcards.length === 0) {
-          throw new Error(SmartRevizI18n.t("errFlashcards"));
-        }
-        if (!parsed.quiz || !Array.isArray(parsed.quiz) || parsed.quiz.length === 0) {
-          throw new Error(SmartRevizI18n.t("errQuiz"));
-        }
+        normaliserModule(parsed);
 
-        console.log("SmartReviz — Données générées :",
-          parsed.summary.chapters.length, "chapitres,",
-          parsed.glossary.length, "termes,",
-          parsed.flashcards.length, "flashcards,",
-          parsed.quiz.length, "questions QCM");
-
+        // Une réponse partielle n'est plus rejetée : on garde les sections
+        // valides, et callLLMWithRetry se chargera de redemander le reste.
+        var obtenues = sections.filter(function (nom) {
+          return sectionValide(parsed, nom);
+        });
+        if (obtenues.length === 0) {
+          var rien = new Error(SmartRevizI18n.t(ERREUR_SECTION[sections[0]] || "errBadJSON"));
+          rien.retryable = true;
+          throw rien;
+        }
+        console.log("SmartReviz — sections reçues :", obtenues.join(", "));
         return parsed;
       });
+  }
+
+  var ERREUR_SECTION = {
+    summary: "errSummary",
+    glossary: "errGlossary",
+    flashcards: "errFlashcards",
+    quiz: "errQuiz",
+  };
+
+  function sectionValide(module, nom) {
+    if (!module) return false;
+    if (nom === "summary") {
+      return !!(
+        module.summary &&
+        Array.isArray(module.summary.chapters) &&
+        module.summary.chapters.length > 0
+      );
+    }
+    return Array.isArray(module[nom]) && module[nom].length > 0;
+  }
+
+  // Seuils de contenu jugé suffisant. Une section valide mais trop maigre (le
+  // modèle a produit 2 chapitres pour un cours de 15 pages) est redemandée une
+  // fois, sans jamais faire échouer la génération pour autant : mieux vaut un
+  // résumé court que pas de module du tout.
+  var SEUILS_SUFFISANCE = { summary: 4, glossary: 10, flashcards: 8, quiz: 8 };
+
+  function tailleSection(module, nom) {
+    if (!sectionValide(module, nom)) return 0;
+    return nom === "summary" ? module.summary.chapters.length : module[nom].length;
+  }
+
+  function sectionSuffisante(module, nom) {
+    if (!sectionValide(module, nom)) return false;
+    return tailleSection(module, nom) >= SEUILS_SUFFISANCE[nom];
+  }
+
+  // Le modèle dépasse régulièrement les cardinalités demandées (jusqu'à 30 termes
+  // de glossaire, 11 flashcards, 11 questions). Plutôt que de rejeter une réponse
+  // par ailleurs correcte, on ramène chaque liste au format attendu par le module
+  // SCORM. L'enseignant peut de toute façon ajuster le contenu dans l'éditeur
+  // avant de générer le paquet.
+  function normaliserModule(module) {
+    function cap(nom, max, label) {
+      if (!Array.isArray(module[nom])) return;
+      if (module[nom].length > max) {
+        console.warn("SmartReviz — " + module[nom].length + " " + label + " reçus, tronqué à " + max);
+        module[nom] = module[nom].slice(0, max);
+      }
+    }
+    cap("glossary", 15, "termes de glossaire");
+    cap("flashcards", 10, "flashcards");
+    cap("quiz", 10, "questions QCM");
+
+    // Une question dont l'index de bonne réponse est hors des 4 choix rendrait le
+    // QCM injouable : on l'écarte plutôt que de l'afficher.
+    if (Array.isArray(module.quiz)) {
+      var avant = module.quiz.length;
+      module.quiz = module.quiz.filter(function (q) {
+        return (
+          q &&
+          Array.isArray(q.choices) &&
+          q.choices.length === 4 &&
+          Number.isInteger(q.correct) &&
+          q.correct >= 0 &&
+          q.correct <= 3
+        );
+      });
+      if (module.quiz.length !== avant) {
+        console.warn(
+          "SmartReviz — " + (avant - module.quiz.length) + " question(s) QCM malformée(s) écartée(s)"
+        );
+      }
+    }
+  }
+
+  // Génère le module, puis ne redemande QUE les sections manquantes. Rejouer la
+  // génération entière coûte ~35 s et bute souvent sur le même écueil, alors
+  // qu'une requête ciblée sur la seule section absente produit une sortie bien
+  // plus courte — donc nettement plus fiable, et bien plus rapide.
+  function callLLMWithRetry(text, language, onStatus) {
+    var MAX_TENTATIVES = 3;
+
+    function manquantes(module) {
+      return ALL_SECTIONS.filter(function (nom) {
+        return !sectionValide(module, nom);
+      });
+    }
+
+    function fusionner(base, ajout, demandees) {
+      if (!base) return ajout;
+      for (var i = 0; i < demandees.length; i++) {
+        if (sectionValide(ajout, demandees[i])) base[demandees[i]] = ajout[demandees[i]];
+      }
+      return base;
+    }
+
+    function termine(module) {
+      console.log(
+        "SmartReviz — Données générées :",
+        module.summary.chapters.length, "chapitres,",
+        module.glossary.length, "termes,",
+        module.flashcards.length, "flashcards,",
+        module.quiz.length, "questions QCM"
+      );
+      return module;
+    }
+
+    function tenter(module, essai) {
+      var absentes = module ? manquantes(module) : ALL_SECTIONS;
+      // Sections présentes mais trop pauvres : on tente de les enrichir, sans
+      // jamais bloquer la génération si le modèle n'y arrive pas.
+      var faibles = module
+        ? ALL_SECTIONS.filter(function (nom) {
+            return absentes.indexOf(nom) === -1 && !sectionSuffisante(module, nom);
+          })
+        : [];
+
+      if (absentes.length === 0 && (faibles.length === 0 || essai > MAX_TENTATIVES)) {
+        if (faibles.length) {
+          console.warn("SmartReviz — section(s) restée(s) en deçà du seuil : " + faibles.join(", "));
+        }
+        return Promise.resolve(termine(module));
+      }
+
+      if (essai > MAX_TENTATIVES) {
+        throw new Error(SmartRevizI18n.t(ERREUR_SECTION[absentes[0]] || "errBadJSON"));
+      }
+
+      var aDemander = absentes.concat(faibles);
+      if (module) {
+        console.warn(
+          "SmartReviz — à reprendre : " + aDemander.join(", ") +
+            (absentes.length ? " (manquante(s) : " + absentes.join(", ") + ")" : " (trop pauvre(s))") +
+            " — demande ciblée (tentative " + essai + "/" + MAX_TENTATIVES + ")"
+        );
+        if (onStatus) onStatus(aDemander);
+      }
+
+      return callLLMAPI(text, language, aDemander)
+        .then(function (partiel) {
+          // Une section trop pauvre n'est remplacée que si la nouvelle version
+          // est réellement meilleure — sinon on garde ce qu'on avait.
+          var retenues = aDemander.filter(function (nom) {
+            if (absentes.indexOf(nom) !== -1) return true;
+            return sectionValide(partiel, nom) && tailleSection(partiel, nom) > tailleSection(module, nom);
+          });
+          return tenter(fusionner(module, partiel, retenues), essai + 1);
+        })
+        .catch(function (err) {
+          if (!err || !err.retryable || essai >= MAX_TENTATIVES) throw err;
+          console.warn("SmartReviz — tentative " + essai + " échouée (" + err.message + "), nouvel essai…");
+          return tenter(module, essai + 1);
+        });
+    }
+
+    return Promise.resolve().then(function () {
+      return tenter(null, 1);
+    });
   }
 
   // --- Load SCORM Template Files ---
@@ -416,7 +749,20 @@
       .then(function () {
         // Asymptotic progress: starts fast, slows down, never stops until API responds
         startAnimatedProgress(35, 98, 40000, SmartRevizI18n.t("progressCallingAPI"));
-        return callClaudeAPI(extractedText, lang);
+        return callLLMWithRetry(extractedText, lang, function (absentes) {
+          // Demande ciblée en cours : on le dit plutôt que de laisser la barre
+          // tourner sans explication.
+          setAnimatedProgressStatus(
+            SmartRevizI18n.t("progressCompleting").replace(
+              "{sections}",
+              absentes
+                .map(function (nom) {
+                  return SmartRevizI18n.t("section_" + nom);
+                })
+                .join(", ")
+            )
+          );
+        });
       })
       .then(function (moduleData) {
         stopAnimatedProgress();
@@ -888,8 +1234,17 @@
   // --- Animated Progress During API Call ---
   var progressInterval = null;
 
+  var animatedStatusText = "";
+
+  // Permet de changer le libellé sans interrompre l'animation en cours (utilisé
+  // quand la génération repart sur une demande ciblée).
+  function setAnimatedProgressStatus(statusText) {
+    animatedStatusText = statusText;
+  }
+
   function startAnimatedProgress(fromPercent, toPercent, durationMs, statusText) {
-    showProgress(fromPercent, statusText);
+    animatedStatusText = statusText;
+    showProgress(fromPercent, animatedStatusText);
     var startTime = Date.now();
     // Asymptotic progress: moves fast at first, then slows down
     // but NEVER stops — approaches toPercent without reaching it
@@ -900,7 +1255,7 @@
       var tau = durationMs / 1.4;
       var progress = 1 - Math.exp(-elapsed / tau);
       var current = Math.round(fromPercent + (toPercent - fromPercent) * progress);
-      showProgress(current, statusText);
+      showProgress(current, animatedStatusText);
     }, 300);
   }
 
