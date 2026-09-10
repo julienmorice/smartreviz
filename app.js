@@ -639,8 +639,12 @@
       "scorm-template/module-data.js",
     ];
 
+    // cache: "no-cache" force la revalidation auprès du serveur. GitHub Pages
+    // sert ces fichiers avec max-age=600 : sans cela, un enseignant générant un
+    // module dans les dix minutes suivant un déploiement embarquerait l'ancien
+    // template dans son paquet SCORM.
     var promises = files.map(function (path) {
-      return fetch(path)
+      return fetch(path, { cache: "no-cache" })
         .then(function (r) {
           return r.text();
         })
@@ -651,7 +655,7 @@
 
     promises = promises.concat(
       FONT_FILES.map(function (nom) {
-        return fetch("scorm-template/fonts/" + nom)
+        return fetch("scorm-template/fonts/" + nom, { cache: "no-cache" })
           .then(function (r) {
             return r.arrayBuffer();
           })
