@@ -10,7 +10,7 @@
        ?v=, un navigateur qui a l'ancienne feuille en cache l'applique au nouveau
        HTML : mise en page cassée pendant dix minutes. INCRÉMENTER v À CHAQUE
        MODIFICATION de style.css, i18n.js ou app.js. -->
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
@@ -71,6 +71,9 @@
     </symbol>
     <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 3.9 2.9 19.3a1 1 0 0 0 .9 1.5h16.4a1 1 0 0 0 .9-1.5L12 3.9Z"/><path d="M12 9.8v4.4"/><path d="M12 17.4h.01"/>
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2.8 4.5 5.9v5.4c0 4.4 3.1 8.5 7.5 9.9 4.4-1.4 7.5-5.5 7.5-9.9V5.9L12 2.8Z"/><path d="m9 12 2.2 2.2L15.2 10"/>
     </symbol>
     <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
       <path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"/>
@@ -175,6 +178,15 @@
           <span class="btn-generate-icon"><svg class="icon"><use href="#i-spark"/></svg></span>
           <span data-i18n="btnGenerate">Générer le module</span>
         </button>
+
+        <aside class="souverainete">
+          <svg class="icon"><use href="#i-shield"/></svg>
+          <p>
+            <strong data-i18n="souvTitre">Modèle servi par ILaaS</strong>
+            <span data-i18n="souvTexte">Le contenu que vous déposez est analysé par le modèle Mistral mistral-small-4-119b, servi par ILaaS. Cette fédération d'inférence mutualisée de l'Enseignement supérieur et de la Recherche français est soutenue par le MESRE, et son travail suivi par la DGESIP et la DGRI.</span>
+            <a href="https://www.ilaas.fr/" target="_blank" rel="noopener noreferrer" data-i18n="souvLien">En savoir plus sur ILaaS</a>
+          </p>
+        </aside>
       </div>
 
     </div><!-- /.card -->
@@ -284,23 +296,23 @@
       <div class="carousel" id="carousel">
         <div class="carousel-track" id="carouselTrack">
           <div class="carousel-slide">
-            <div class="slide-label" data-i18n="slide1">01 — Résumé</div>
+            <div class="slide-label" data-i18n="slide1">01 · Résumé</div>
             <img src="img/1_resume.png" alt="Résumé du cours">
           </div>
           <div class="carousel-slide">
-            <div class="slide-label" data-i18n="slide2">02 — Glossaire</div>
+            <div class="slide-label" data-i18n="slide2">02 · Glossaire</div>
             <img src="img/2_glossaire.png" alt="Glossaire interactif">
           </div>
           <div class="carousel-slide">
-            <div class="slide-label" data-i18n="slide3">03 — Matching</div>
+            <div class="slide-label" data-i18n="slide3">03 · Matching</div>
             <img src="img/3_matching.png" alt="Activité de matching">
           </div>
           <div class="carousel-slide">
-            <div class="slide-label" data-i18n="slide4">04 — Flashcards</div>
+            <div class="slide-label" data-i18n="slide4">04 · Flashcards</div>
             <img src="img/4_flashCard.png" alt="Flashcards">
           </div>
           <div class="carousel-slide">
-            <div class="slide-label" data-i18n="slide5">05 — QCM</div>
+            <div class="slide-label" data-i18n="slide5">05 · QCM</div>
             <img src="img/5_qcm.png" alt="Questionnaire à choix multiples">
           </div>
         </div>
@@ -327,14 +339,16 @@
     <a href="mailto:julien.morice@imt-bs.eu">julien.morice@imt-bs.eu</a>
     <span class="footer-sep">·</span>
     <span>PracTice IMT-BS</span>
+    <span class="footer-sep">·</span>
+    <span><span data-i18n="footerMoteur">Inférence :</span> <a href="https://www.ilaas.fr/" target="_blank" rel="noopener noreferrer">ILaaS</a></span>
   </footer>
 
   <script src="lib/jszip.min.js"></script>
   <script src="lib/mammoth.browser.min.js"></script>
   <script src="lib/pdf.min.js"></script>
   <script src="lib/marked.min.js"></script>
-  <script src="i18n.js?v=6"></script>
-  <script src="app.js?v=6"></script>
+  <script src="i18n.js?v=7"></script>
+  <script src="app.js?v=7"></script>
   <script>
     // Language switcher
     document.querySelectorAll('.lang-btn').forEach(function(btn) {

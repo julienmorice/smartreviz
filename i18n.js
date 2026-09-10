@@ -39,6 +39,12 @@
       // Generate
       btnGenerate: "Générer le module",
 
+      // Souveraineté — formulations strictement adossées à ilaas.fr
+      souvTitre: "Modèle servi par ILaaS",
+      souvTexte: "Le contenu que vous déposez est analysé par le modèle Mistral mistral-small-4-119b, servi par ILaaS. Cette fédération d'inférence mutualisée de l'Enseignement supérieur et de la Recherche français est soutenue par le MESRE, et son travail suivi par la DGESIP et la DGRI.",
+      souvLien: "En savoir plus sur ILaaS",
+      footerMoteur: "Inférence :",
+
       // Editor
       step3Title: "Vérifiez et modifiez le contenu généré",
       editorSubtitle: "Corrigez les éventuelles erreurs de l'IA avant de générer votre module.",
@@ -112,11 +118,11 @@
       // Carousel
       carouselTitle: "Aperçu du module généré",
       carouselSubtitle: "5 activités interactives créées automatiquement à partir de votre cours",
-      slide1: "01 — Résumé",
-      slide2: "02 — Glossaire",
-      slide3: "03 — Matching",
-      slide4: "04 — Flashcards",
-      slide5: "05 — QCM",
+      slide1: "01 · Résumé",
+      slide2: "02 · Glossaire",
+      slide3: "03 · Matching",
+      slide4: "04 · Flashcards",
+      slide5: "05 · QCM",
       carouselPrevLabel: "Précédent",
       carouselNextLabel: "Suivant",
 
@@ -178,6 +184,12 @@
 
       // Generate
       btnGenerate: "Generate module",
+
+      // Sovereignty — wording taken strictly from ilaas.fr
+      souvTitre: "Model served by ILaaS",
+      souvTexte: "The content you upload is processed by the Mistral model mistral-small-4-119b, served by ILaaS. This shared inference federation of French higher education and research is backed by the MESRE, and its work overseen by the DGESIP and DGRI.",
+      souvLien: "More about ILaaS",
+      footerMoteur: "Inference:",
 
       // Editor
       step3Title: "Review and edit the generated content",
@@ -252,11 +264,11 @@
       // Carousel
       carouselTitle: "Preview of the generated module",
       carouselSubtitle: "5 interactive activities automatically created from your course",
-      slide1: "01 — Summary",
-      slide2: "02 — Glossary",
-      slide3: "03 — Matching",
-      slide4: "04 — Flashcards",
-      slide5: "05 — Quiz",
+      slide1: "01 · Summary",
+      slide2: "02 · Glossary",
+      slide3: "03 · Matching",
+      slide4: "04 · Flashcards",
+      slide5: "05 · Quiz",
       carouselPrevLabel: "Previous",
       carouselNextLabel: "Next",
 

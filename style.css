@@ -392,6 +392,42 @@ input[type="text"]:focus, select:focus, textarea:focus {
 
 .btn-generate .icon, .btn-validate-generate .icon { width: 18px; height: 18px; }
 
+/* ---- Mention de souveraineté ----
+   Placée sous le bouton, au moment précis où l'enseignant s'apprête à confier
+   son document. Informative, pas décorative : elle ne doit pas concurrencer
+   l'action principale. */
+.souverainete {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin-top: 1rem;
+  padding: 0.875rem 1rem;
+  background: var(--gris-clair);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.souverainete > .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--bleu-fonce);
+  margin-top: 1px;
+}
+
+.souverainete p { font-size: 0.8125rem; line-height: 1.6; color: var(--gris-texte); }
+.souverainete strong { display: block; font-weight: 600; color: var(--noir); margin-bottom: 0.15rem; }
+
+.souverainete a {
+  color: var(--bleu-fonce);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+  margin-left: 0.3rem;
+}
+
+.souverainete a:hover { color: var(--bleu-sombre); }
+
 /* ============================================================
    PROGRESSION
    ============================================================ */
