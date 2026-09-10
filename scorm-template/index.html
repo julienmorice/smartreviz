@@ -162,7 +162,7 @@
         card: "Carte",
         checkMatching: "Vérifier",
         matchingAutoComplete: "Compléter",
-        matchingHint: "Astuce : après 3 erreurs sur une définition, vous pourrez demander la réponse."
+        matchingHint: "Astuce : après {n} erreurs sur une définition, vous pourrez demander la réponse."
       },
       en: {
         summary: "Summary", glossary: "Glossary", matching: "Matching", flashcards: "Flashcards", quiz: "Quiz",
@@ -197,7 +197,7 @@
         card: "Card",
         checkMatching: "Check",
         matchingAutoComplete: "Reveal",
-        matchingHint: "Tip: after 3 wrong attempts on a definition, you can ask for the answer."
+        matchingHint: "Tip: after {n} wrong attempts on a definition, you can ask for the answer."
       }
     };
 
@@ -298,7 +298,7 @@
     var matchingItems = [];
     var matchingCompleted = false;
     var slotAttempts = {};  // Track failed attempts per slot (keyed by expected term)
-    var MAX_ATTEMPTS = 3;
+    var MAX_ATTEMPTS = 2;
 
     function initMatching() {
       var glossary = data.glossary || [];
@@ -335,7 +335,9 @@
         slotsHTML += '</div>';
         slotsHTML += '<div class="slot-definition">' + escapeHTML(item.definition) + '</div>';
         slotsHTML += '<div class="slot-attempts" data-for="' + escapeAttr(item.term) + '">';
-        slotsHTML += '<span class="attempt-dot"></span><span class="attempt-dot"></span><span class="attempt-dot"></span>';
+        // Autant de pastilles que de tentatives autorisées : les deux restent
+        // ainsi cohérents si MAX_ATTEMPTS change.
+        for (var d = 0; d < MAX_ATTEMPTS; d++) slotsHTML += '<span class="attempt-dot"></span>';
         slotsHTML += '</div>';
         slotsHTML += '</div>';
       });
@@ -346,10 +348,12 @@
       matchingCompleted = false;
       document.getElementById("btnToFlashcards").disabled = true;
 
+      syncProgressBarHeight();
+      updatePoolState();
       setupDragAndDrop();
     }
 
-    // Auto-place the correct term for a given slot (after 3 failed attempts)
+    // Auto-place the correct term for a given slot (once MAX_ATTEMPTS is reached)
     function autoPlaceTerm(expected) {
       var slot = document.querySelector('.match-slot[data-expected="' + CSS.escape(expected) + '"]');
       if (!slot) return;
@@ -395,12 +399,13 @@
         var autoBtn = slot.querySelector(".btn-auto-complete");
         if (autoBtn) autoBtn.remove();
 
+        updatePoolState();
         // Check if all are now matched
         checkAllMatched();
       }, 600);
     }
 
-    // Show "Compléter" button for a slot after 3 failures
+    // Show the "Compléter" button for a slot once MAX_ATTEMPTS is reached
     function showAutoCompleteButton(expected) {
       var slot = document.querySelector('.match-slot[data-expected="' + CSS.escape(expected) + '"]');
       if (!slot || slot.querySelector(".btn-auto-complete")) return;
@@ -412,6 +417,23 @@
         autoPlaceTerm(expected);
       });
       slot.appendChild(btn);
+    }
+
+    // La réserve de termes est collée sous la barre de progression : il faut donc
+    // connaître la hauteur réelle de celle-ci, qui varie (mobile, retour à la
+    // ligne des libellés).
+    function syncProgressBarHeight() {
+      var bar = document.getElementById("progressBar");
+      if (!bar) return;
+      document.documentElement.style.setProperty("--pb-h", bar.offsetHeight + "px");
+    }
+
+    // Une réserve vide n'a plus besoin de rester collée en haut de l'écran.
+    function updatePoolState() {
+      var pool = document.getElementById("termsPool");
+      var wrapper = document.getElementById("matchingTerms");
+      if (!pool || !wrapper) return;
+      wrapper.classList.toggle("pool-empty", pool.querySelectorAll(".match-term").length === 0);
     }
 
     // Update the attempt dots visual for a slot
@@ -428,6 +450,9 @@
 
     // Check if all terms are correctly matched
     function checkAllMatched() {
+      // Recalé ici aussi : l'état de la réserve ne doit pas dépendre du chemin
+      // emprunté pour placer un terme (glisser, tactile, ou révélation).
+      updatePoolState();
       var slots = document.querySelectorAll(".match-slot");
       var allCorrect = true;
       slots.forEach(function(slot) {
@@ -496,6 +521,7 @@
         if (placeholder) placeholder.style.display = "none";
         dropzone.appendChild(draggedEl);
         draggedEl.classList.remove("dragging");
+        updatePoolState();
       });
 
       // --- Touch support for mobile ---
@@ -546,6 +572,7 @@
           var placeholder = dropzone.querySelector(".slot-placeholder");
           if (placeholder) placeholder.style.display = "none";
           dropzone.appendChild(touchDragged);
+          updatePoolState();
         }
 
         touchDragged = null;
@@ -633,8 +660,9 @@
               var placeholder = dz.querySelector(".slot-placeholder");
               if (placeholder) placeholder.style.display = "";
               document.getElementById("termsPool").appendChild(pt);
+              updatePoolState();
 
-              // After 3 failed attempts, show the "Compléter" button
+              // Once the attempt budget is spent, offer to reveal the answer
               if (slotAttempts[exp] >= MAX_ATTEMPTS) {
                 showAutoCompleteButton(exp);
               }
@@ -651,7 +679,7 @@
         document.getElementById("btnToFlashcards").disabled = false;
         document.getElementById("btnCheckMatching").style.display = "none";
       } else {
-        // Show feedback with hint about auto-complete after 3 attempts
+        // Show feedback with hint about auto-complete once the budget is spent
         var fbText = '<strong>' + correct + '/' + total + '</strong> ' + L.matchingScore;
         var slotsWithMaxAttempts = 0;
         Object.keys(slotAttempts).forEach(function(key) {
@@ -659,11 +687,13 @@
         });
         if (slotsWithMaxAttempts === 0) {
           // Show hint that auto-complete exists
-          fbText += '<br><span class="matching-hint">' + (L.matchingHint || "Astuce : après 3 erreurs sur une définition, vous pourrez demander la réponse.") + '</span>';
+          fbText += '<br><span class="matching-hint">' + (L.matchingHint || "Astuce : après {n} erreurs sur une définition, vous pourrez demander la réponse.").replace("{n}", MAX_ATTEMPTS) + '</span>';
         }
         fb.innerHTML = fbText;
         fb.className = "matching-feedback partial";
       }
+
+      updatePoolState();
     }
 
     // --- Flashcards ---
@@ -860,6 +890,12 @@
     function escapeAttr(str) {
       return (str || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
+
+    // La barre de progression change de hauteur selon la largeur d'écran (les
+    // libellés disparaissent sous 600 px) : on resynchronise le décalage de la
+    // réserve de termes collante.
+    syncProgressBarHeight();
+    window.addEventListener("resize", syncProgressBarHeight);
 
     window.addEventListener("beforeunload", function() {
       ScormAPI.finish();

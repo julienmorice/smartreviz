@@ -223,6 +223,19 @@ body {
   gap: 24px;
 }
 
+/* La réserve de termes reste visible pendant qu'on fait défiler les définitions :
+   sans cela, dès qu'on descend vers les dernières définitions, les termes à
+   glisser sortent de l'écran et l'activité devient impraticable.
+   --pb-h est la hauteur réelle de la barre de progression, mesurée en JS. */
+.matching-terms {
+  position: sticky;
+  top: var(--pb-h, 66px);
+  z-index: 20;
+  background: var(--bg);
+  padding: 12px 0 10px;
+  margin-top: -12px;
+}
+
 .matching-terms h3 {
   font-size: 15px;
   color: var(--secondary);
@@ -239,6 +252,16 @@ body {
   background: #fff;
   border-radius: var(--radius);
   border: 2px dashed #dee2e6;
+  /* Bornée pour ne jamais monopoliser l'écran quand il reste beaucoup de termes */
+  max-height: 34vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+/* Une fois tous les termes placés, la réserve vide n'a plus à occuper l'espace
+   collant en haut de l'écran. */
+.matching-terms.pool-empty {
+  position: static;
 }
 
 .match-term {
