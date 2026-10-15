@@ -927,3 +927,8 @@ input[type="text"]:focus, select:focus, textarea:focus {
 /* Onglet Association */
 .editor-hint { font-size: 0.8125rem; color: var(--gris-texte); margin: 0 0 0.75rem; }
 .editor-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+/* Bilan de la vérification de fidélité au document */
+.fidelity-notice { font-size: 0.8125rem; padding: 0.6rem 0.85rem; border-radius: var(--radius-xs); margin: 0 0 1rem; border: 1px solid var(--border); background: var(--bleu-light); color: var(--bleu-fonce); }
+.fidelity-notice.warn { background: var(--erreur-light); color: var(--erreur); border-color: var(--erreur); }
+.fidelity-notice[hidden] { display: none; }
