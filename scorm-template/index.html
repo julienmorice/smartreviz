@@ -316,10 +316,16 @@
     var MAX_ATTEMPTS = 2;
 
     function initMatching() {
-      var glossary = data.glossary || [];
-      // Pick up to 8 items, shuffled
-      var shuffled = glossary.slice().sort(function() { return Math.random() - 0.5; });
-      matchingItems = shuffled.slice(0, Math.min(8, shuffled.length));
+      // Paires choisies par l'enseignant·e dans l'éditeur ; à défaut (modules
+      // anciens), jusqu'à 8 termes du glossaire tirés au hasard.
+      var pairs = data.matching || [];
+      if (pairs.length) {
+        matchingItems = pairs.slice();
+      } else {
+        var glossary = data.glossary || [];
+        var shuffled = glossary.slice().sort(function() { return Math.random() - 0.5; });
+        matchingItems = shuffled.slice(0, Math.min(8, shuffled.length));
+      }
 
       // Reset attempt counters
       slotAttempts = {};

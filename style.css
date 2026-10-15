@@ -923,3 +923,7 @@ input[type="text"]:focus, select:focus, textarea:focus {
   .carousel-btn { width: 34px; height: 34px; }
   .quiz-choices-grid { grid-template-columns: 1fr; }
 }
+
+/* Onglet Association */
+.editor-hint { font-size: 0.8125rem; color: var(--gris-texte); margin: 0 0 0.75rem; }
+.editor-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }

@@ -889,6 +889,7 @@
     editorPanel.classList.add("active");
     renderTabSummary(data.summary);
     renderTabGlossary(data.glossary);
+    renderTabMatching(data.matching && data.matching.length ? data.matching : data.glossary.slice(0, 8), data.glossary);
     renderTabFlashcards(data.flashcards);
     renderTabQuiz(data.quiz);
     editorPanel.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1053,6 +1054,56 @@
     '</div>';
   }
 
+  // --- MATCHING TAB (jeu de glisser-déposer) ---
+  function renderTabMatching(pairs, glossary) {
+    var el = document.getElementById("tab-matching");
+    var t = SmartRevizI18n.t;
+    var html = '<p class="editor-hint">' + esc(t("matchingIntro")) + '</p>';
+    html += '<div id="ed-matching">';
+    pairs.forEach(function(item, i) { html += matchingRow(item, i); });
+    html += '</div>';
+    html += '<div class="editor-actions">' +
+      '<button class="btn-add-row" id="btnAddPair">' + esc(t("addPair")) + '</button> ' +
+      '<button class="btn-add-row" id="btnPairsFromGloss">' + esc(t("matchingFromGlossary")) + '</button>' +
+    '</div>';
+    el.innerHTML = html;
+
+    var container = document.getElementById("ed-matching");
+    function refresh() {
+      bindDeleteBtns(container);
+      container.querySelectorAll(".btn-row-delete").forEach(function(btn) {
+        var retirer = btn.onclick;
+        btn.onclick = function() { retirer(); refresh(); };
+      });
+      document.getElementById("countMatching").textContent = container.querySelectorAll(".editor-row").length;
+    }
+
+    document.getElementById("btnAddPair").addEventListener("click", function() {
+      var div = document.createElement("div");
+      div.innerHTML = matchingRow({ term: "", definition: "" }, container.querySelectorAll(".editor-row").length);
+      container.appendChild(div.firstChild);
+      refresh();
+    });
+
+    // Le glossaire peut avoir été modifié depuis : on relit ses valeurs actuelles.
+    document.getElementById("btnPairsFromGloss").addEventListener("click", function() {
+      if (container.querySelector(".editor-row") && !confirm(t("matchingFromGlossaryConfirm"))) return;
+      var current = [];
+      document.querySelectorAll("#ed-glossary .editor-row").forEach(function(row) {
+        var term = row.querySelector(".gloss-term").value.trim();
+        if (term) current.push({ term: term, definition: row.querySelector(".gloss-def").value.trim() });
+      });
+      container.innerHTML = current.slice(0, 8).map(matchingRow).join("");
+      refresh();
+    });
+
+    refresh();
+  }
+
+  function matchingRow(item, i) {
+    return glossaryRow(item, i);
+  }
+
   // --- FLASHCARDS TAB ---
   function renderTabFlashcards(flashcards) {
     var el = document.getElementById("tab-flashcards");
@@ -1214,6 +1265,19 @@
       if (term) glossary.push({ term: term, definition: def });
     });
     data.glossary = glossary;
+
+    // Matching : une paire par terme (le jeu repère les termes par leur libellé)
+    var matching = [];
+    var seenTerms = {};
+    document.querySelectorAll("#ed-matching .editor-row").forEach(function(row) {
+      var term = row.querySelector(".gloss-term").value.trim();
+      var def = row.querySelector(".gloss-def").value.trim();
+      if (term && def && !seenTerms[term]) {
+        seenTerms[term] = true;
+        matching.push({ term: term, definition: def });
+      }
+    });
+    data.matching = matching;
 
     // Flashcards
     var flashcards = [];
