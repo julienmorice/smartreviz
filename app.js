@@ -285,7 +285,28 @@
     ],
   };
 
-  function buildSystemPrompt(language, sections, nbCars) {
+  // Langue du document déposé, estimée par comptage de mots grammaticaux
+  // fréquents. Renvoie "fr", "en", ou null si l'écart est trop mince pour trancher.
+  var MOTS_FR = /\b(le|la|les|des|du|de|et|est|sont|dans|pour|que|qui|une|un|au|aux|sur|par|avec|ce|cette|ces|ne|pas|plus|ou|mais|sont|être|il|elle)\b/gi;
+  var MOTS_EN = /\b(the|of|and|is|are|in|to|that|which|for|with|as|on|by|this|these|it|its|be|was|were|from|at|or|not|an|a|has|have)\b/gi;
+
+  function detecterLangue(texte) {
+    var extrait = String(texte || "").slice(0, 20000);
+    var fr = (extrait.match(MOTS_FR) || []).length;
+    var en = (extrait.match(MOTS_EN) || []).length;
+    if (fr + en < 20) return null;
+    if (fr > en * 1.5) return "fr";
+    if (en > fr * 1.5) return "en";
+    return null;
+  }
+
+  // Vrai quand le module doit être rédigé dans une autre langue que le document.
+  function langueDifferente(texte, language) {
+    var doc = detecterLangue(texte);
+    return !!doc && doc !== language;
+  }
+
+  function buildSystemPrompt(language, sections, nbCars, langueDoc) {
     var langLabel = language === "fr" ? "Français" : "English";
     var partiel = sections.length < ALL_SECTIONS.length;
 
@@ -302,6 +323,15 @@
     }
 
     prompt += "Langue de sortie : " + langLabel + "\n\nRègles STRICTES :\n";
+    if (langueDoc && langueDoc !== language) {
+      var langDocLabel = langueDoc === "fr" ? "français" : "anglais";
+      prompt +=
+        "- LANGUES : le document est en " + langDocLabel + " mais le module doit être rédigé en " + langLabel + ". " +
+        "Tout ce que lit l'apprenant (titres, résumé, termes, définitions, flashcards, questions, choix, explications) est " +
+        "écrit en " + langLabel + ". EXCEPTION ABSOLUE : les champs \"source\" restent des citations littérales " +
+        "en " + langDocLabel + ", exactement comme dans le document, JAMAIS traduites. Un champ \"source\" traduit rend " +
+        "l'élément inutilisable.\n";
+    }
     prompt +=
       "- FIDÉLITÉ AU DOCUMENT (règle absolue, prioritaire sur toutes les autres, y compris sur les nombres d'éléments) : " +
       "le document fourni entre <document> et </document> est ta SEULE source. N'utilise AUCUNE connaissance extérieure, " +
@@ -494,7 +524,7 @@
       console.warn("SmartReviz — Text truncated from " + text.length + " to " + maxChars + " chars");
       text = text.substring(0, maxChars);
     }
-    systemPrompt = buildSystemPrompt(language, sections, text.length);
+    systemPrompt = buildSystemPrompt(language, sections, text.length, detecterLangue(text));
 
     return appelerProxy({
       // 16384 et non 8192 : sur un document volumineux la génération atteignait
@@ -955,7 +985,15 @@
   // Renvoie une promesse de { corriges, supprimes } (+ echec: true si la partie
   // faite par le modèle n'a pas pu avoir lieu : le contrôle déterministe, lui,
   // s'est appliqué, et l'enseignant est averti dans l'éditeur).
-  function auditerFidelite(module, texteSource) {
+  function auditerFidelite(module, texteSource, language) {
+    // Le contrôle phrase par phrase compare des mots : il n'a aucun sens entre deux
+    // langues (constaté : un module anglais tiré d'un cours français perdait la
+    // moitié de ses questions à tort). Seul l'ancrage des citations, qui reste en
+    // langue du document, a joué ; on le dit à l'enseignant.
+    if (langueDifferente(texteSource, language)) {
+      console.warn("SmartReviz — audit phrase par phrase ignoré : langue du module différente de celle du document");
+      return Promise.resolve({ corriges: 0, supprimes: 0, autreLangue: true });
+    }
     var source = texteSource.length > 60000 ? texteSource.substring(0, 60000) : texteSource;
     var analyseur = creerAnalyseurSource(source);
     var elements = construireElementsAudit(module);
@@ -1408,7 +1446,7 @@
       .then(function (moduleData) {
         stopAnimatedProgress();
         showProgress(99, SmartRevizI18n.t("progressAuditing"));
-        return auditerFidelite(moduleData, extractedText).then(function (bilan) {
+        return auditerFidelite(moduleData, extractedText, lang).then(function (bilan) {
           fidelityReport = bilan;
           return moduleData;
         });
@@ -1491,6 +1529,9 @@
     var texte, ok = true;
     if (!bilan || bilan.echec) {
       texte = t("fidelityFailed");
+      ok = false;
+    } else if (bilan.autreLangue) {
+      texte = t("fidelityOtherLang");
       ok = false;
     } else if (!bilan.corriges && !bilan.supprimes) {
       texte = t("fidelityClean");
