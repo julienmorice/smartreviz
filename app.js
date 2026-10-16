@@ -292,8 +292,7 @@
     var prompt =
       "Tu es un assistant pédagogique spécialisé dans la création de modules de révision.\n";
     prompt += partiel
-      ? "Une première génération a échoué sur une partie du module. À partir du contenu de " +
-        "cours fourni, tu DOIS produire un objet JSON contenant UNIQUEMENT " +
+      ? "À partir du contenu de cours fourni, tu DOIS produire un objet JSON contenant UNIQUEMENT " +
         (sections.length > 1 ? "ces " + sections.length + " clés" : "cette clé") +
         " :\n\n"
       : "À partir du contenu de cours fourni, tu DOIS générer un objet JSON contenant EXACTEMENT ces 4 clés :\n\n";
@@ -411,7 +410,51 @@
       });
   }
 
-  // Décode la réponse JSON du modèle (avec repêchage si elle est entourée de texte).
+  // Le modèle oublie parfois de fermer un tableau ou un objet imbriqué (constaté
+  // le 16/10/2026 : « }]}, "glossary" » au lieu de « }]}]}, "glossary" » à la fin
+  // du résumé). Le reste de la réponse est bon : on referme les crochets restés
+  // ouverts dès qu'une clé de premier niveau réapparaît, et en fin de texte.
+  var CLES_RACINE = /^,\s*"(summary|glossary|flashcards|quiz|matching)"\s*:/;
+
+  function reparerJSON(content) {
+    var pile = [];
+    var sortie = "";
+    var dansChaine = false;
+    var echappe = false;
+    for (var i = 0; i < content.length; i++) {
+      var c = content[i];
+      if (dansChaine) {
+        if (echappe) echappe = false;
+        else if (c === "\\") echappe = true;
+        else if (c === '"') dansChaine = false;
+        sortie += c;
+        continue;
+      }
+      if (c === '"') {
+        dansChaine = true;
+      } else if (c === "{" || c === "[") {
+        pile.push(c === "{" ? "}" : "]");
+      } else if (c === "}" || c === "]") {
+        // fermeture qui ne correspond pas : on referme d'abord ce qui manquait
+        var k = pile.lastIndexOf(c);
+        if (k !== -1) {
+          while (pile.length - 1 > k) sortie += pile.pop();
+          pile.pop();
+        } else {
+          continue; // fermeture en trop : on l'ignore
+        }
+      } else if (c === "," && pile.length > 1 && CLES_RACINE.test(content.slice(i, i + 40))) {
+        while (pile.length > 1) sortie += pile.pop();
+      }
+      sortie += c;
+    }
+    if (dansChaine) sortie += '"';
+    while (pile.length) sortie += pile.pop();
+    return sortie;
+  }
+
+  // Décode la réponse JSON du modèle (avec repêchage si elle est entourée de texte
+  // ou si des crochets manquent).
   function decoderJSON(content) {
     content = content.replace(/^```json?\s*\n?/i, "").replace(/\n?```\s*$/, "").trim();
     try {
@@ -423,6 +466,15 @@
         try {
           return JSON.parse(content.slice(first, last + 1));
         } catch (e2) {
+          /* on tente la réparation ci-dessous */
+        }
+      }
+      if (first !== -1) {
+        try {
+          var repare = JSON.parse(reparerJSON(content.slice(first)));
+          console.warn("SmartReviz — JSON du modèle réparé (crochets manquants)");
+          return repare;
+        } catch (e3) {
           /* retombe sur l'erreur ci-dessous */
         }
       }
@@ -1068,56 +1120,82 @@
       return module;
     }
 
-    function tenter(module, essai) {
-      var absentes = module ? manquantes(module) : ALL_SECTIONS;
-      // Sections présentes mais trop pauvres : on tente de les enrichir, sans
-      // jamais bloquer la génération si le modèle n'y arrive pas.
-      var faibles = module
-        ? ALL_SECTIONS.filter(function (nom) {
-            return absentes.indexOf(nom) === -1 && !sectionSuffisante(module, nom, text.length);
-          })
-        : [];
+    // Demande les sections au modèle. Une erreur « réessayable » (JSON inexploitable,
+    // réponse coupée, surcharge) est rendue sous la forme { erreur } au lieu d'être
+    // levée : c'est à l'appelant de décider quoi faire, pour que les relances ne
+    // s'empilent jamais.
+    function demander(sections) {
+      return callLLMAPI(text, language, sections).catch(function (err) {
+        if (!err || !err.retryable) throw err;
+        console.warn("SmartReviz — appel échoué (" + err.message + ") pour : " + sections.join(", "));
+        err.sections = sections;
+        return { erreur: err };
+      });
+    }
 
-      if (absentes.length === 0 && (faibles.length === 0 || essai > MAX_TENTATIVES)) {
-        if (faibles.length) {
-          console.warn("SmartReviz — section(s) restée(s) en deçà du seuil : " + faibles.join(", "));
-        }
+    // Première passe : deux appels EN PARALLÈLE (résumé d'un côté, glossaire +
+    // flashcards + QCM de l'autre). Un seul appel pour tout durait 70 s sur un
+    // cours de 25 000 caractères, et son JSON, très imbriqué, se retrouvait
+    // régulièrement mal fermé ; deux sorties plus courtes vont deux fois plus vite.
+    function premierePasse() {
+      var groupes = [["summary"], ["glossary", "flashcards", "quiz"]];
+      return Promise.all(groupes.map(demander)).then(function (reponses) {
+        var module = null;
+        var derniereErreur = null;
+        reponses.forEach(function (rep, i) {
+          if (rep.erreur) {
+            derniereErreur = rep.erreur;
+            return;
+          }
+          module = module || {};
+          fusionner(module, rep, groupes[i]);
+        });
+        if (!module) throw derniereErreur;
+        return module;
+      });
+    }
+
+    // Reprises ciblées : au plus MAX_TENTATIVES appels supplémentaires, en série,
+    // sans récursion dans un `catch` (c'était ce qui multipliait les relances).
+    // Une section présente mais maigre ne fait jamais échouer la génération ;
+    // seule une section totalement absente après les reprises est une erreur.
+    function completer(module, essai) {
+      var absentes = manquantes(module);
+      var faibles = ALL_SECTIONS.filter(function (nom) {
+        return absentes.indexOf(nom) === -1 && !sectionSuffisante(module, nom, text.length);
+      });
+
+      if (absentes.length === 0 && faibles.length === 0) return Promise.resolve(termine(module));
+
+      // Sections seulement maigres : une seule reprise, jamais plus.
+      if (essai > MAX_TENTATIVES || (absentes.length === 0 && essai > 1)) {
+        if (absentes.length) throw new Error(SmartRevizI18n.t(ERREUR_SECTION[absentes[0]] || "errBadJSON"));
+        console.warn("SmartReviz — section(s) restée(s) en deçà du seuil : " + faibles.join(", "));
         return Promise.resolve(termine(module));
       }
 
-      if (essai > MAX_TENTATIVES) {
-        throw new Error(SmartRevizI18n.t(ERREUR_SECTION[absentes[0]] || "errBadJSON"));
-      }
-
       var aDemander = absentes.concat(faibles);
-      if (module) {
-        console.warn(
-          "SmartReviz — à reprendre : " + aDemander.join(", ") +
-            (absentes.length ? " (manquante(s) : " + absentes.join(", ") + ")" : " (trop pauvre(s))") +
-            " — demande ciblée (tentative " + essai + "/" + MAX_TENTATIVES + ")"
-        );
-        if (onStatus) onStatus(aDemander);
-      }
+      console.warn(
+        "SmartReviz — à reprendre : " + aDemander.join(", ") +
+          (absentes.length ? " (manquante(s) : " + absentes.join(", ") + ")" : " (trop pauvre(s))") +
+          " — demande ciblée (tentative " + essai + "/" + MAX_TENTATIVES + ")"
+      );
+      if (onStatus) onStatus(aDemander);
 
-      return callLLMAPI(text, language, aDemander)
-        .then(function (partiel) {
-          // Une section trop pauvre n'est remplacée que si la nouvelle version
-          // est réellement meilleure — sinon on garde ce qu'on avait.
-          var retenues = aDemander.filter(function (nom) {
-            if (absentes.indexOf(nom) !== -1) return true;
-            return sectionValide(partiel, nom) && tailleSection(partiel, nom) > tailleSection(module, nom);
-          });
-          return tenter(fusionner(module, partiel, retenues), essai + 1);
-        })
-        .catch(function (err) {
-          if (!err || !err.retryable || essai >= MAX_TENTATIVES) throw err;
-          console.warn("SmartReviz — tentative " + essai + " échouée (" + err.message + "), nouvel essai…");
-          return tenter(module, essai + 1);
+      return demander(aDemander).then(function (partiel) {
+        if (partiel.erreur) return completer(module, essai + 1);
+        // Une section trop pauvre n'est remplacée que si la nouvelle version
+        // est réellement meilleure — sinon on garde ce qu'on avait.
+        var retenues = aDemander.filter(function (nom) {
+          if (absentes.indexOf(nom) !== -1) return true;
+          return sectionValide(partiel, nom) && tailleSection(partiel, nom) > tailleSection(module, nom);
         });
+        return completer(fusionner(module, partiel, retenues), essai + 1);
+      });
     }
 
-    return Promise.resolve().then(function () {
-      return tenter(null, 1);
+    return premierePasse().then(function (module) {
+      return completer(module, 1);
     });
   }
 
